@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+{% block title %}Chat @{{ other_username }} - ConnectHub{% endblock %}
+{% block content %}
+<div class="max-w-[680px] mx-auto">
+  <!-- Header -->
+  <div class="card p-0 overflow-hidden">
+    <div class="flex items-center gap-3 px-3 py-2.5">
+      <a href="{% url 'chat:conversation_list' %}" class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center">←</a>
+      {% if other.profile.avatar %}
+        <img src="{{ other.profile.avatar.url }}" class="w-9 h-9 rounded-full object-cover">
+      {% else %}
+        <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-violet-500 flex items-center justify-center text-white font-bold text-xs">{{ other_username|slice:":1"|upper }}</div>
+      {% endif %}
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm leading-none flex items-center gap-1.5">@{{ other_username }} <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span></div>
+        <div class="text-[11px] text-muted">Active now • {{ other.email|default:"ConnectHub user" }}</div>
+      </div>
+      <div class="hidden sm:flex gap-1">
+        <button id="call-btn" class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center" title="Voice call">📞</button>
+        <button id="vc-btn" class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center" title="Video call">🎥</button>
+        <button class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center">⋯</button>
+      </div>
+      <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-muted border border-line dark:border-neutral-700 rounded-full px-2 py-1">
+        <span id="poll-dot" class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span><span id="poll-status">connected</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Call banner + videos -->
+  <div id="call-banner" class="hidden card mt-2 p-3 flex items-center gap-3 bg-sky-50 dark:bg-sky-950/30 border-sky-200 dark:border-sky-800">
+    <span class="w-8 h-8 rounded-full bg-brand text-white flex items-center justify-center text-sm">📞</span>
+    <div class="flex-1">
+      <div class="font-semibold text-sm" id="call-status">Calling @{{ other_username }}...</div>
+      <div class="text-xs text-muted" id="call-sub">Ringing • polling</div>
+    </div>
+    <button id="call-end" class="btn btn-danger !py-1 !text-xs">End</button>
+  </div>
+  <div id="call-videos" class="hidden mt-2 grid grid-cols-2 gap-2">
+    <div class="relative bg-black rounded-lg overflow-hidden aspect-[4/3] flex items-center justify-center">
+      <video id="localVideo" autoplay muted playsinline class="w-full h-full object-cover"></video>
+      <span class="absolute bottom-1 left-1 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded-full">You</span>
+    </div>
+    <div class="relative bg-black rounded-lg overflow-hidden aspect-[4/3] flex items-center justify-center">
+      <video id="remoteVideo" autoplay playsinline class="w-full h-full object-cover"></video>
+      <span class="absolute bottom-1 left-1 text-[10px] bg-black/60 text-white px-1.5 py-0.5 rounded-full">@{{ other_username }}</span>
+      <span id="remote-placeholder" class="absolute inset-0 flex items-center justify-center text-white/70 text-sm">Waiting...</span>
+    </div>
+  </div>
+  <!-- Incoming call modal -->
+  <div id="incoming" class="hidden card mt-2 p-4 text-center border-brand">
+    <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-violet-500 flex items-center justify-center text-white font-bold mx-auto">{{ other_username|slice:":1"|upper }}</div>
+    <p class="font-semibold mt-2">@{{ other_username }} is calling...</p>
+    <p class="text-xs text-muted" id="incoming-type">Voice call</p>
+    <div class="flex gap-2 justify-center mt-3">
+      <button id="accept-call" class="btn !py-1.5">Accept</button>
+      <button id="decline-call" class="btn btn-outline !py-1.5">Decline</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="border-x border-line dark:border-neutral-700 bg-[#fafafa] dark:bg-neutral-950 h-[56vh] min-h-[340px] max-h-[520px] overflow-y-auto flex flex-col gap-1.5 p-3" id="messages">
+    <div class="text-center py-2">
+      <span class="text-[11px] bg-white dark:bg-neutral-800 border border-line dark:border-neutral-700 rounded-full px-2.5 py-1 text-muted">Today • end-to-end polling + WebRTC calls</span>
+    </div>
+    {% for m in messages %}
+      {% if m.sender == user %}
+        <div class="self-end max-w-[72%] flex flex-col items-end" data-id="{{ m.id }}">
+          <div class="bg-brand text-white px-3.5 py-2 rounded-[18px] rounded-br-[4px] text-[14px] leading-[1.35] whitespace-pre-wrap shadow-sm">{{ m.content }}</div>
+          <span class="text-[10px] text-muted mt-1 pr-1">{{ m.created_at|date:"H:i" }} {% if m.is_read %}✓✓{% else %}✓{% endif %}</span>
+        </div>
+      {% else %}
+        <div class="self-start flex gap-2 max-w-[72%]" data-id="{{ m.id }}">
+          {% if other.profile.avatar %}
+            <img src="{{ other.profile.avatar.url }}" class="w-6 h-6 rounded-full object-cover shrink-0 mt-1 hidden sm:block">
+          {% endif %}
+          <div class="flex flex-col items-start">
+            <div class="bg-white dark:bg-neutral-800 border border-line dark:border-neutral-700 px-3.5 py-2 rounded-[18px] rounded-bl-[4px] text-[14px] leading-[1.35] whitespace-pre-wrap shadow-sm">{{ m.content }}</div>
+            <span class="text-[10px] text-muted mt-1 pl-1">{{ m.created_at|date:"H:i" }}</span>
+          </div>
+        </div>
+      {% endif %}
+    {% empty %}
+      <div class="flex-1 flex flex-col items-center justify-center text-center py-10">
+        <div class="w-16 h-16 rounded-full bg-white dark:bg-neutral-800 border border-line dark:border-neutral-700 flex items-center justify-center text-2xl">👋</div>
+        <p class="font-semibold mt-3">No messages yet</p>
+        <p class="text-sm text-muted">Say hi to @{{ other_username }}! And try 📞/🎥</p>
+      </div>
+    {% endfor %}
+    <div id="typing" class="hidden self-start bg-white dark:bg-neutral-800 border border-line dark:border-neutral-700 px-3 py-2 rounded-[18px] text-muted text-xs">● ● ● typing…</div>
+  </div>
+
+  <!-- Input -->
+  <div class="card !rounded-t-none p-2.5 !border-t-0">
+    <form method="post" id="msg-form" class="flex items-center gap-2">
+      {% csrf_token %}
+      <button type="button" class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center shrink-0" title="Emoji">😊</button>
+      <input type="text" name="content" id="msg-input" placeholder="Message @{{ other_username }}..." maxlength="1000" required autocomplete="off" class="flex-1 bg-neutral-100 dark:bg-neutral-800 border-0 rounded-full px-4 py-2.5 text-sm focus:ring-1 focus:ring-brand placeholder:text-muted">
+      <button type="submit" class="w-9 h-9 rounded-full bg-brand hover:bg-brand-dark text-white flex items-center justify-center shrink-0 font-bold">↑</button>
+    </form>
+    <div class="flex justify-between items-center mt-1.5 px-1">
+      <span class="text-[11px] text-muted"><span id="char-count">0</span>/1000</span>
+      <span class="text-[11px] text-muted hidden sm:inline">Enter to send • 📞/🎥 try karo!</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let lastId = {{ last_id }};
+let lastCallId = {{ last_call_id }};
+const messagesDiv = document.getElementById('messages');
+const input = document.getElementById('msg-input');
+const form = document.getElementById('msg-form');
+const typingEl = document.getElementById('typing');
+const otherUsername = "{{ other_username|escapejs }}";
+const isVideoDefault = false;
+
+function scrollBottom() { messagesDiv.scrollTop = messagesDiv.scrollHeight; }
+scrollBottom();
+input.addEventListener('input', () => { document.getElementById('char-count').textContent = input.value.length; });
+function appendMsg(m) {
+  // Duplicate rokho — ek hi baar dikhe, jab bheju tab hi
+  if (document.querySelector(`[data-id="${m.id}"]`)) return;
+  typingEl.classList.add('hidden');
+  const isMe = m.is_me;
+  const wrap = document.createElement('div');
+  wrap.dataset.id = m.id;
+  if (isMe) {
+    wrap.className = 'self-end max-w-[72%] flex flex-col items-end';
+    wrap.innerHTML = `<div class="bg-brand text-white px-3.5 py-2 rounded-[18px] rounded-br-[4px] text-[14px] leading-[1.35] whitespace-pre-wrap shadow-sm">${m.content}</div><span class="text-[10px] text-muted mt-1 pr-1">${m.created_at}</span>`;
+  } else {
+    wrap.className = 'self-start flex gap-2 max-w-[72%]';
+    wrap.innerHTML = `<div class="flex flex-col items-start"><div class="bg-white dark:bg-neutral-800 border border-line dark:border-neutral-700 px-3.5 py-2 rounded-[18px] rounded-bl-[4px] text-[14px] leading-[1.35] whitespace-pre-wrap shadow-sm">${m.content}</div><span class="text-[10px] text-muted mt-1 pl-1">${m.created_at}</span></div>`;
+  }
+  messagesDiv.appendChild(wrap);
+  if (m.id > lastId) lastId = m.id;
+  scrollBottom();
+}
+let sending = false;
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (sending) return;
+  const content = input.value.trim();
+  if (!content) return;
+  sending = true;
+  const btn = form.querySelector('button[type="submit"]');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch(window.location.pathname, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRF(), 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ content: content })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      input.value = ''; document.getElementById('char-count').textContent='0';
+      // Real message turant fetch karo — fake append nahi, taaki duplicate na ho
+      const pr = await fetch(`${window.location.pathname}?after=${lastId}&call_after=${lastCallId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' }});
+      const pd = await pr.json();
+      if (pd.messages && pd.messages.length) pd.messages.forEach(appendMsg);
+      if (pd.calls && pd.calls.length) handleSignals(pd.calls);
+    }
+  } finally {
+    sending = false;
+    if (btn) btn.disabled = false;
+  }
+});
+
+// Polling messages + calls
+setInterval(() => {
+  fetch(`${window.location.pathname}?after=${lastId}&call_after=${lastCallId}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+    .then(r => r.json())
+    .then(d => {
+      if (d.messages && d.messages.length) {
+        if (!d.messages.some(m => m.is_me)) {
+          typingEl.classList.remove('hidden');
+          setTimeout(() => { typingEl.classList.add('hidden'); d.messages.forEach(appendMsg); }, 300);
+        } else { d.messages.forEach(appendMsg); }
+      }
+      if (d.calls && d.calls.length) handleSignals(d.calls);
+      document.getElementById('poll-status').textContent='connected';
+      document.getElementById('poll-dot').className='w-2 h-2 rounded-full bg-green-500 animate-pulse';
+    }).catch(()=>{ document.getElementById('poll-status').textContent='polling...'; });
+}, 2000);
+
+// ===== WebRTC Call/VC (simple polling signaling) =====
+let pc=null, localStream=null, pendingOffer=null;
+const callBanner=document.getElementById('call-banner'), callStatus=document.getElementById('call-status'), callSub=document.getElementById('call-sub'), callEnd=document.getElementById('call-end');
+const incomingEl=document.getElementById('incoming'), acceptBtn=document.getElementById('accept-call'), declineBtn=document.getElementById('decline-call');
+const callVideos=document.getElementById('call-videos'), localVideo=document.getElementById('localVideo'), remoteVideo=document.getElementById('remoteVideo'), remotePH=document.getElementById('remote-placeholder');
+
+async function getMedia(video){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({video: video, audio:true});
+    localVideo.srcObject = stream;
+    localStream = stream;
+    return stream;
+  }catch(e){ alert('Mic/Camera permission do: '+e.message); throw e; }
+}
+function makePC(){
+  const c = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+  c.onicecandidate = e => {
+    if(e.candidate) fetch(`./signal/`, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()}, body: JSON.stringify({type:'ice', data:e.candidate, is_video: !!c.isVideo})});
+  };
+  c.ontrack = e => { remoteVideo.srcObject = e.streams[0]; remotePH.style.display='none'; };
+  c.onconnectionstatechange = ()=>{ if(c.connectionState==='failed'||c.connectionState==='disconnected') endCall(false); };
+  return c;
+}
+async function sendSignal(type, data, is_video){
+  await fetch(`./signal/`, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()}, body: JSON.stringify({type, data, is_video})});
+}
+function showBanner(text, sub){ callBanner.classList.remove('hidden'); callStatus.textContent=text; callSub.textContent=sub||''; }
+function hideBanner(){ callBanner.classList.add('hidden'); }
+function showVideos(show){ callVideos.classList.toggle('hidden', !show); }
+async function startCall(video){
+  try{
+    const stream = await getMedia(video);
+    pc = makePC(); pc.isVideo = video;
+    stream.getTracks().forEach(t=>pc.addTrack(t, stream));
+    showVideos(video);
+    showBanner(video ? 'Calling @'+otherUsername+' (video)...':'Calling @'+otherUsername+'...', 'Ringing • waiting for answer');
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await sendSignal('offer', pc.localDescription, video);
+  }catch{}
+}
+async function handleSignals(signals){
+  for(const s of signals){
+    if(s.type==='offer'){
+      pendingOffer=s;
+      document.getElementById('incoming-type').textContent = s.is_video ? 'Video call' : 'Voice call';
+      incomingEl.classList.remove('hidden');
+      // ack read after showing
+      fetch(`./ack/`, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()}, body: JSON.stringify({ids:[s.id]})});
+    } else if(s.type==='answer' && pc){
+      await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(s.data)));
+      showBanner('Connected • @'+otherUsername, s.is_video ? 'Video':'Voice');
+      fetch(`./ack/`, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()}, body: JSON.stringify({ids:[s.id]})});
+    } else if(s.type==='ice' && pc){
+      try{ await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(s.data))); }catch{}
+      fetch(`./ack/`, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()}, body: JSON.stringify({ids:[s.id]})});
+    } else if(s.type==='hangup'){
+      endCall(true, false);
+      fetch(`./ack/`, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()}, body: JSON.stringify({ids:[s.id]})});
+    }
+    if(s.id > lastCallId) lastCallId = s.id;
+  }
+}
+async function endCall(sendHangup=true, notify=true){
+  if(sendHangup) try{ await sendSignal('hangup', {}, false); }catch{}
+  if(pc){ try{ pc.close(); }catch{} pc=null; }
+  if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+  hideBanner(); showVideos(false); incomingEl.classList.add('hidden');
+  localVideo.srcObject=null; remoteVideo.srcObject=null; remotePH.style.display='flex';
+  if(notify) callStatus.textContent='Call ended';
+}
+
+document.getElementById('call-btn').onclick = ()=> startCall(false);
+document.getElementById('vc-btn').onclick = ()=> startCall(true);
+callEnd.onclick = ()=> endCall(true);
+declineBtn.onclick = ()=> { incomingEl.classList.add('hidden'); sendSignal('hangup', {}, false); };
+acceptBtn.onclick = async ()=>{
+  incomingEl.classList.add('hidden');
+  const offer = pendingOffer;
+  if(!offer) return;
+  const stream = await getMedia(offer.is_video);
+  pc = makePC(); pc.isVideo = offer.is_video;
+  stream.getTracks().forEach(t=>pc.addTrack(t, stream));
+  showVideos(offer.is_video);
+  await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(offer.data)));
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
+  await sendSignal('answer', pc.localDescription, offer.is_video);
+  showBanner('Connected • @'+otherUsername, offer.is_video ? 'Video':'Voice');
+};
+</script>
+{% endblock %}

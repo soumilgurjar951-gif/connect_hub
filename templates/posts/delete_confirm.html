@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Delete Post - ConnectHub{% endblock %}
+{% block content %}
+<div class="card" style="max-width:500px; margin: 0 auto; text-align:center;">
+  <h2>Delete this post?</h2>
+  <p style="color:#666; margin:10px 0; white-space:pre-wrap; background:#fafafa; padding:10px; border-radius:6px;">{{ post.content }}</p>
+  <p style="font-size:12px; color:#ed4956;">Soft delete - DB me rahega par feed me nahi dikhega.</p>
+  <form method="post" style="margin-top:16px;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+    <a href="{% url 'posts:detail' post.pk %}" class="btn btn-outline" style="margin-left:8px;">Cancel</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Notifications - ConnectHub{% endblock %}
+{% block content %}
+<div class="max-w-[600px] mx-auto">
+  <h2 class="text-xl font-bold mb-4">Notifications</h2>
+  <div class="card divide-y divide-neutral-100 dark:divide-neutral-800">
+    {% for n in notifications %}
+      <div class="flex gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 {% if not n.is_read %}bg-sky-50/50 dark:bg-sky-950/20{% endif %}">
+        <div class="w-9 h-9 rounded-full flex items-center justify-center shrink-0
+          {% if n.type == 'like' or n.type == 'reel_like' %}bg-pink-100 text-pink-600
+          {% elif n.type == 'follow' or n.type == 'follow_request' %}bg-violet-100 text-violet-600
+          {% elif n.type == 'comment' %}bg-cyan-100 text-cyan-600
+          {% else %}bg-neutral-100{% endif %}">
+          {% if n.type == 'like' %}❤️{% elif n.type == 'reel_like' %}🎬{% elif n.type == 'follow' %}👤{% elif n.type == 'follow_request' %}📩{% elif n.type == 'comment' %}💬{% else %}🔔{% endif %}
+        </div>
+        <div class="flex-1 min-w-0">
+          {% if n.type == 'like' %}
+            <p class="text-sm"><b>@{{ n.actor.username }}</b> liked your post {% if n.post %}— "{{ n.post.content|truncatechars:30 }}"{% endif %}</p>
+          {% elif n.type == 'reel_like' %}
+            <p class="text-sm"><b>@{{ n.actor.username }}</b> liked your reel {% if n.post %}— "{{ n.post.content|truncatechars:30 }}"{% endif %}</p>
+          {% elif n.type == 'follow' %}
+            <p class="text-sm"><b>@{{ n.actor.username }}</b> started following you</p>
+          {% elif n.type == 'follow_request' %}
+            <p class="text-sm"><b>@{{ n.actor.username }}</b> sent a follow request</p>
+          {% elif n.type == 'comment' %}
+            <p class="text-sm"><b>@{{ n.actor.username }}</b> commented on your post {% if n.post %}— "{{ n.post.content|truncatechars:20 }}"{% endif %}</p>
+          {% else %}
+            <p class="text-sm"><b>@{{ n.actor.username }}</b> {{ n.type }}</p>
+          {% endif %}
+          <p class="text-xs text-muted">{{ n.created_at|timesince }} ago {% if not n.is_read %}• <b class="text-brand">New</b>{% endif %}</p>
+        </div>
+        <div class="shrink-0 flex flex-col gap-1">
+          {% if n.type == 'follow' or n.type == 'follow_request' %}
+            <a href="{% url 'accounts:profile' n.actor.username %}" class="btn !py-1 !text-xs">View</a>
+          {% elif n.post %}
+            <a href="{% url 'posts:detail' n.post.pk %}" class="btn !py-1 !text-xs">View</a>
+          {% endif %}
+        </div>
+      </div>
+    {% empty %}
+      <div class="p-10 text-center">
+        <div class="text-3xl">🔔</div>
+        <p class="font-semibold mt-2">No notifications yet</p>
+        <p class="text-sm text-muted">When someone likes your post/reel, comments, or follows you, it will appear here.</p>
+      </div>
+    {% endfor %}
+  </div>
+  {% if notifications %}
+    <p class="text-center text-xs text-muted mt-3">Showing {{ notifications|length }} notifications • polling will also update</p>
+  {% endif %}
+</div>
+{% endblock %}

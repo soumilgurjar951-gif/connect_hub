@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Step 1 — Find people{% endblock %}
+{% block content %}
+<div class="max-w-[520px] mx-auto">
+  <div class="text-center mb-4">
+    <div class="text-xs tracking-widest text-muted">Step 1 of 3</div>
+    <div class="h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full mt-1"><div class="h-full bg-brand rounded-full" style="width:33%"></div></div>
+    <h2 class="font-display text-[22px] font-semibold mt-3">Who inspires you?</h2>
+    <p class="text-muted text-sm">Follow 3+ creators to wake up your feed.</p>
+  </div>
+
+  <form method="get" class="flex gap-2">
+    <input name="q" value="{{ q }}" placeholder="Search username..." class="input flex-1 !rounded-full">
+    <button type="submit" class="btn !rounded-full">Search</button>
+  </form>
+
+  <div class="card p-0 mt-4 divide-y divide-neutral-100 dark:divide-neutral-800">
+    {% for p in suggested %}
+    <div class="flex items-center gap-3 px-4 py-3">
+      <div class="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center font-bold">{{ p.username|slice:":1"|upper }}</div>
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm">{{ p.display_name|default:p.username }}</div>
+        <div class="text-muted text-xs">@{{ p.username }} • {{ p.followers_count }} followers</div>
+      </div>
+      <form method="post" action="{% url 'accounts:follow_toggle' p.username %}?next={{ request.path }}">{% csrf_token %}
+        <button type="submit" class="btn btn-outline !py-1 !text-xs">
+          {% if p.user_id in following_ids %}Following{% else %}Follow{% endif %}
+        </button>
+      </form>
+    </div>
+    {% empty %}
+    <p class="p-4 text-sm text-muted text-center">No suggestions. Try search above.</p>
+    {% endfor %}
+  </div>
+
+  <div class="flex gap-2 mt-4">
+    <div class="flex-1 text-xs text-muted flex items-center">{{ following_count }}/3 followed</div>
+    <a href="{% url 'accounts:onboarding_step2' %}" class="btn">Continue →</a>
+    <a href="{% url 'accounts:onboarding_step2' %}" class="btn btn-outline">Skip for now</a>
+  </div>
+</div>
+{% endblock %}
+

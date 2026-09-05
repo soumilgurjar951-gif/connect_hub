@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Edit Comment - ConnectHub{% endblock %}
+{% block content %}
+<div class="card" style="max-width:500px; margin:0 auto;">
+  <h3>Edit Comment</h3>
+  <p style="color:#666; font-size:12px;">Within 5 minutes only. Max 200 chars.</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <input type="text" name="content" value="{{ comment.content }}" maxlength="200" required style="width:100%; padding:8px 10px; border:1px solid #dbdbdb; border-radius:4px;">
+    </div>
+    <button type="submit" class="btn">Save</button>
+    <a href="{% url 'posts:detail' comment.post.pk %}" class="btn btn-outline" style="margin-left:8px;">Cancel</a>
+  </form>
+</div>
+{% endblock %}

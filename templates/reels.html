@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}Reels - ConnectHub{% endblock %}
+{% block content %}
+<div class="max-w-[420px] mx-auto">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-lg font-bold">Reels</h2>
+    <span class="text-xs bg-brand text-white px-2 py-0.5 rounded-full">Swipe ↑↓</span>
+  </div>
+
+  <!-- Vertical reels panel — alag -->
+  <div class="h-[72vh] min-h-[520px] max-h-[740px] overflow-y-auto snap-y snap-mandatory no-scrollbar rounded-xl bg-black border border-line dark:border-neutral-800" style="scrollbar-width:none;">
+    {% for p in page_obj %}
+    <div class="h-[72vh] min-h-[520px] max-h-[740px] snap-start relative flex flex-col justify-end p-4 bg-neutral-900 overflow-hidden">
+      {% if p.images.all %}
+        <img src="{{ p.images.all.0.image.url }}" class="absolute inset-0 w-full h-full object-cover opacity-90">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
+      {% else %}
+        <div class="absolute inset-0 bg-gradient-to-br from-violet-600 via-pink-500 to-cyan-500"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-6 text-white text-center text-lg font-medium">{{ p.content|truncatechars:120 }}</div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+      {% endif %}
+
+      <!-- Right actions -->
+      <div class="absolute right-3 bottom-24 flex flex-col gap-4 items-center text-white">
+        <button class="like-btn flex flex-col items-center gap-1" data-post="{{ p.pk }}">
+          <span class="w-11 h-11 rounded-full bg-white/15 backdrop-blur flex items-center justify-center text-xl">{% if p.pk in liked_ids %}❤️{% else %}🤍{% endif %}</span>
+          <span class="text-xs font-semibold drop-shadow like-count">{{ p.likes.count }}</span>
+        </button>
+        <a href="{% url 'posts:detail' p.pk %}" class="flex flex-col items-center gap-1">
+          <span class="w-11 h-11 rounded-full bg-white/15 backdrop-blur flex items-center justify-center text-lg">💬</span>
+          <span class="text-xs font-semibold drop-shadow">{{ p.comments.count }}</span>
+        </a>
+        <button class="share-btn w-11 h-11 rounded-full bg-white/15 backdrop-blur flex items-center justify-center text-lg" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'posts:detail' p.pk %}" data-author="@{{ p.author.username }}" title="Share">↗</button>
+      </div>
+
+      <!-- Bottom info -->
+      <div class="relative z-10 text-white">
+        <a href="{% url 'accounts:profile' p.author.profile.username|default:p.author.username %}" class="font-semibold text-sm hover:underline">@{{ p.author.profile.username|default:p.author.username }}</a>
+        <span class="text-white/80 text-xs"> • {{ p.created_at|timesince }} ago</span>
+        <p class="text-sm mt-1 line-clamp-2 leading-relaxed">{{ p.content }}</p>
+        <div class="flex items-center gap-2 mt-2 text-xs text-white/80">
+          <span>🎵 Original audio • @{{ p.author.username }}</span>
+        </div>
+        <a href="{% url 'posts:detail' p.pk %}" class="inline-block mt-2 text-xs bg-white text-black px-3 py-1 rounded-full font-semibold">View post →</a>
+      </div>
+    </div>
+    {% empty %}
+    <div class="h-full flex flex-col items-center justify-center p-8 text-center text-white">
+      <div class="text-5xl">🎬</div>
+      <p class="font-semibold mt-3">No reels yet</p>
+      <p class="text-sm text-white/70 mt-1">Create a post — vo yahan vertical reel ki tarah dikhega.</p>
+      <a href="{% url 'posts:create' %}" class="btn mt-4 bg-white !text-black">Create reel</a>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.has_next %}
+    <div class="text-center mt-3"><a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline !rounded-full">Load more</a></div>
+  {% endif %}
+  <p class="text-center text-[11px] text-muted mt-2">Alag panel — swipe up/down • Home pe wapas jaane ke liye sidebar Home</p>
+</div>
+
+<!-- Share panel (WhatsApp, Snapchat, Facebook, Copy, Add account) -->
+<div id="share-sheet" class="fixed inset-0 z-40 hidden">
+  <div id="share-bg" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+  <div class="absolute bottom-0 left-0 right-0 bg-white dark:bg-neutral-900 rounded-t-2xl p-4 max-w-[420px] mx-auto">
+    <div class="w-10 h-1 rounded-full bg-neutral-200 dark:bg-neutral-700 mx-auto mb-3"></div>
+    <h3 class="font-semibold text-center">Share</h3>
+    <p id="share-author" class="text-xs text-muted text-center truncate"></p>
+    <div class="grid grid-cols-4 gap-3 mt-4">
+      <a id="share-wa" target="_blank" class="flex flex-col items-center gap-1.5">
+        <span class="w-14 h-14 rounded-full bg-[#25D366] flex items-center justify-center text-xl">💬</span>
+        <span class="text-xs">WhatsApp</span>
+      </a>
+      <a id="share-fb" target="_blank" class="flex flex-col items-center gap-1.5">
+        <span class="w-14 h-14 rounded-full bg-[#1877F2] flex items-center justify-center text-white font-bold">f</span>
+        <span class="text-xs">Facebook</span>
+      </a>
+      <a id="share-snap" target="_blank" class="flex flex-col items-center gap-1.5">
+        <span class="w-14 h-14 rounded-full bg-[#FFFC00] flex items-center justify-center text-xl border border-line">👻</span>
+        <span class="text-xs">Snapchat</span>
+      </a>
+      <button id="share-copy" class="flex flex-col items-center gap-1.5">
+        <span class="w-14 h-14 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-xl">🔗</span>
+        <span class="text-xs">Copy</span>
+      </button>
+      <a id="share-tw" target="_blank" class="flex flex-col items-center gap-1.5">
+        <span class="w-14 h-14 rounded-full bg-black text-white flex items-center justify-center font-bold">𝕏</span>
+        <span class="text-xs">X</span>
+      </a>
+      <a href="https://t.me/share/url?url=" id="share-tg" target="_blank" class="flex flex-col items-center gap-1.5">
+        <span class="w-14 h-14 rounded-full bg-[#26A5E4] flex items-center justify-center text-xl">✈️</span>
+        <span class="text-xs">Telegram</span>
+      </a>
+      <a href="/accounts/onboarding/1/" class="flex flex-col items-center gap-1.5">
+        <span class="w-14 h-14 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-violet-500 flex items-center justify-center text-white text-xl">＋</span>
+        <span class="text-xs">Add account</span>
+      </a>
+      <button id="share-native" class="flex flex-col items-center gap-1.5">
+        <span class="w-14 h-14 rounded-full bg-neutral-900 text-white dark:bg-white dark:text-black flex items-center justify-center text-xl">⤴</span>
+        <span class="text-xs">More</span>
+      </button>
+    </div>
+    <div class="flex gap-2 mt-4">
+      <input id="share-link" readonly class="input flex-1 !rounded-full text-xs">
+      <button id="share-copy2" class="btn !rounded-full !py-2">Copy</button>
+    </div>
+    <button id="share-close" class="w-full mt-3 py-2.5 rounded-full bg-neutral-100 dark:bg-neutral-800 font-semibold text-sm">Close</button>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.like-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    fetch(`/posts/${btn.dataset.post}/like/`, { method:'POST', headers:{'X-CSRFToken': getCSRF(), 'X-Requested-With':'XMLHttpRequest'}})
+      .then(r=>r.json()).then(d => {
+        btn.querySelector('.like-count').textContent = d.likes_count;
+        btn.querySelector('span').textContent = d.is_liked ? '❤️' : '🤍';
+      });
+  });
+});
+
+// Share sheet
+const sheet = document.getElementById('share-sheet');
+const bg = document.getElementById('share-bg');
+const closeBtn = document.getElementById('share-close');
+const linkInput = document.getElementById('share-link');
+const wa = document.getElementById('share-wa');
+const fb = document.getElementById('share-fb');
+const snap = document.getElementById('share-snap');
+const tw = document.getElementById('share-tw');
+const tg = document.getElementById('share-tg');
+const copyBtn = document.getElementById('share-copy');
+const copyBtn2 = document.getElementById('share-copy2');
+const nativeBtn = document.getElementById('share-native');
+const authorEl = document.getElementById('share-author');
+let currentUrl = '';
+
+function openShare(url, author) {
+  currentUrl = url;
+  linkInput.value = url;
+  authorEl.textContent = author || '';
+  const enc = encodeURIComponent(url);
+  const text = encodeURIComponent('Check this on ConnectHub ' + (author||''));
+  wa.href = `https://wa.me/?text=${enc}`;
+  fb.href = `https://www.facebook.com/sharer/sharer.php?u=${enc}`;
+  snap.href = `https://www.snapchat.com/scan?attachmentUrl=${enc}`;
+  tw.href = `https://twitter.com/intent/tweet?url=${enc}&text=${text}`;
+  tg.href = `https://t.me/share/url?url=${enc}&text=${text}`;
+  sheet.classList.remove('hidden');
+}
+function closeShare(){ sheet.classList.add('hidden'); }
+
+document.querySelectorAll('.share-btn').forEach(btn => {
+  btn.addEventListener('click', () => openShare(btn.dataset.url, btn.dataset.author));
+});
+bg.addEventListener('click', closeShare);
+closeBtn.addEventListener('click', closeShare);
+copyBtn.addEventListener('click', () => { navigator.clipboard.writeText(currentUrl); copyBtn.querySelector('span:last-child').textContent='Copied!'; setTimeout(()=>copyBtn.querySelector('span:last-child').textContent='Copy',1200); });
+copyBtn2.addEventListener('click', () => { navigator.clipboard.writeText(currentUrl); copyBtn2.textContent='Copied!'; setTimeout(()=>copyBtn2.textContent='Copy',1200); });
+nativeBtn.addEventListener('click', () => {
+  if (navigator.share) navigator.share({ title: 'ConnectHub', text: 'Check this reels', url: currentUrl }).catch(()=>{});
+  else { navigator.clipboard.writeText(currentUrl); nativeBtn.querySelector('span:last-child').textContent='Copied!'; }
+});
+</script>
+{% endblock %}

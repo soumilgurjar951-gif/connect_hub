@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - @{{ profile.username }}{% endblock %}
+{% block content %}
+<div class="max-w-[600px] mx-auto">
+  <div class="card p-0 overflow-hidden">
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-line dark:border-neutral-700">
+      <a href="{% url 'accounts:profile' profile.username %}" class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center">←</a>
+      <div>
+        <h2 class="font-semibold text-[15px]">{{ title }}</h2>
+        <p class="text-xs text-muted">@{{ profile.username }} • {{ follows|length }} {% if type == 'followers' %}followers{% else %}following{% endif %}</p>
+      </div>
+    </div>
+
+    {% for f in follows %}
+      {% if type == 'followers' %}
+        {% with u=f.follower p=f.follower.profile %}
+        <div class="flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+          <a href="{% url 'accounts:profile' p.username %}" class="w-11 h-11 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center font-bold shrink-0 overflow-hidden">
+            {% if p.avatar %}<img src="{{ p.avatar.url }}" class="w-full h-full object-cover">{% else %}{{ p.username|slice:":1"|upper }}{% endif %}
+          </a>
+          <div class="flex-1 min-w-0">
+            <a href="{% url 'accounts:profile' p.username %}" class="font-semibold text-sm hover:underline">@{{ p.username }}</a>
+            <div class="text-xs text-muted truncate">{{ p.bio|default:"No bio" }}</div>
+          </div>
+          {% if user.is_authenticated and u != user %}
+            {% if u.id in my_following %}
+              <form method="post" action="{% url 'accounts:follow_toggle' p.username %}">{% csrf_token %}<button type="submit" class="btn btn-outline !py-1 !text-xs">Following</button></form>
+            {% else %}
+              <form method="post" action="{% url 'accounts:follow_toggle' p.username %}">{% csrf_token %}<button type="submit" class="btn !py-1 !text-xs">Follow</button></form>
+            {% endif %}
+          {% endif %}
+        </div>
+        {% endwith %}
+      {% else %}
+        {% with u=f.following p=f.following.profile %}
+        <div class="flex items-center gap-3 px-4 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+          <a href="{% url 'accounts:profile' p.username %}" class="w-11 h-11 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center font-bold shrink-0 overflow-hidden">
+            {% if p.avatar %}<img src="{{ p.avatar.url }}" class="w-full h-full object-cover">{% else %}{{ p.username|slice:":1"|upper }}{% endif %}
+          </a>
+          <div class="flex-1 min-w-0">
+            <a href="{% url 'accounts:profile' p.username %}" class="font-semibold text-sm hover:underline">@{{ p.username }}</a>
+            <div class="text-xs text-muted truncate">{{ p.bio|default:"No bio" }}</div>
+          </div>
+          {% if user.is_authenticated and u != user %}
+            {% if u.id in my_following %}
+              <form method="post" action="{% url 'accounts:follow_toggle' p.username %}">{% csrf_token %}<button type="submit" class="btn btn-outline !py-1 !text-xs">Following</button></form>
+            {% else %}
+              <form method="post" action="{% url 'accounts:follow_toggle' p.username %}">{% csrf_token %}<button type="submit" class="btn !py-1 !text-xs">Follow</button></form>
+            {% endif %}
+          {% endif %}
+        </div>
+        {% endwith %}
+      {% endif %}
+    {% empty %}
+      <div class="p-10 text-center">
+        <div class="text-3xl">👥</div>
+        <p class="font-medium mt-2 text-sm">{% if type == 'followers' %}No followers yet{% else %}Not following anyone yet{% endif %}</p>
+        <p class="text-xs text-muted mt-1">{% if type == 'followers' %}When someone follows @{{ profile.username }}, they'll appear here.{% else %}When @{{ profile.username }} follows people, they'll appear here.{% endif %}</p>
+        {% if type == 'following' and follows|length == 0 %}<a href="/explore/" class="btn mt-3 !text-xs">Find people</a>{% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

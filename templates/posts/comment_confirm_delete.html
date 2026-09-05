@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Delete Comment - ConnectHub{% endblock %}
+{% block content %}
+<div class="card" style="max-width:500px; margin:0 auto; text-align:center;">
+  <h3>Delete comment?</h3>
+  <p style="background:#fafafa; padding:10px; border-radius:6px; margin:10px 0;">{{ comment.content }}</p>
+  <p style="font-size:12px; color:#666;">Within 5 min only. This cannot be undone.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+    <a href="{% url 'posts:detail' comment.post.pk %}" class="btn btn-outline" style="margin-left:8px;">Cancel</a>
+  </form>
+</div>
+{% endblock %}

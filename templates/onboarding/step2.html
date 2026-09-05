@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Step 2 — Pick interests{% endblock %}
+{% block content %}
+<div class="max-w-[520px] mx-auto">
+  <div class="text-center mb-4">
+    <div class="text-xs tracking-widest text-muted">Step 2 of 3</div>
+    <div class="h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full mt-1"><div class="h-full bg-brand rounded-full" style="width:66%"></div></div>
+    <h2 class="font-display text-[22px] font-semibold mt-3">What are you into?</h2>
+    <p class="text-muted text-sm">Pick 3+. We'll tune your feed.</p>
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="flex flex-wrap gap-2">
+      {% for tag in tags %}
+      <label class="cursor-pointer">
+        <input type="checkbox" name="interests" value="{{ tag }}" {% if tag in selected %}checked{% endif %} class="peer sr-only">
+        <span class="inline-block px-3 py-1.5 rounded-full border border-line dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm peer-checked:bg-violet-50 peer-checked:border-brand peer-checked:text-brand">{{ tag }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    <div class="mt-4 flex gap-2">
+      <a href="{% url 'accounts:onboarding_step1' %}" class="btn btn-outline flex-1 justify-center">← Back</a>
+      <button type="submit" class="btn flex-1 justify-center">Continue</button>
+    </div>
+    <p class="text-xs text-muted text-center mt-2">You can change this anytime in Settings.</p>
+  </form>
+</div>
+{% endblock %}
+

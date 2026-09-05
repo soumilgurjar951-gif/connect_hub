@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Post {{ post.pk }} - ConnectHub{% endblock %}
+{% block content %}
+<div class="max-w-[600px] mx-auto">
+<div class="card overflow-hidden">
+  <div class="flex items-center gap-2.5 px-3 py-2.5">
+    {% if post.author.profile.avatar %}
+      <img src="{{ post.author.profile.avatar.url }}" class="w-8 h-8 rounded-full object-cover">
+    {% endif %}
+    <a href="{% url 'accounts:profile' post.author.profile.username %}" class="font-semibold text-sm">@{{ post.author.profile.username|default:post.author.username }}</a>
+    <small class="text-muted ml-auto">{{ post.created_at|timesince }} ago {% if post.is_deleted %}(deleted){% endif %}</small>
+  </div>
+  <p class="px-3 pb-2 text-[15px] whitespace-pre-wrap">{{ post.content }}</p>
+  {% if post.location %}<p class="px-3 pb-1 text-xs text-muted">📍 {{ post.location }}</p>{% endif %}
+  {% if post.tagged %}<p class="px-3 pb-1 text-xs text-brand">Tag: {{ post.tagged }}</p>{% endif %}
+  {% if post.images.all %}
+    <div class="flex gap-2 flex-wrap px-3 pb-2">
+      {% for img in post.images.all %}
+        <img src="{{ img.image.url }}" class="w-[220px] h-[220px] object-cover rounded-[10px] border border-line dark:border-neutral-700">
+      {% endfor %}
+    </div>
+  {% endif %}
+  <div class="px-3 py-2.5 flex gap-3 items-center text-[13px] border-t border-neutral-100 dark:border-neutral-800">
+    {% if user.is_authenticated %}
+      <button id="like-btn-detail" class="btn {% if is_liked %}btn-danger{% else %}btn-outline{% endif %} !py-1.5">
+        {% if is_liked %}❤️ Liked{% else %}🤍 Like{% endif %} (<span id="like-count">{{ post.likes.count }}</span>)
+      </button>
+    {% else %}
+      <span>❤️ {{ post.likes.count }} likes</span>
+    {% endif %}
+    <span class="text-muted">💬 {{ post.comments.count }} comments</span>
+    {% if is_author %}
+      <a href="{% url 'posts:delete' post.pk %}" class="btn btn-danger ml-auto !py-1 !text-xs">Delete</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card p-4 mt-3">
+  <h3 class="font-semibold mb-3">Comments</h3>
+  {% if user.is_authenticated %}
+    <form method="post" action="{% url 'posts:comment_create' post.pk %}" class="flex gap-2 mb-3">
+      {% csrf_token %}
+      <input type="text" name="content" placeholder="Add a comment... (max 200)" maxlength="200" required class="input !rounded-full">
+      <button type="submit" class="btn shrink-0">Post</button>
+    </form>
+  {% else %}
+    <p class="text-[13px] text-muted"><a href="{% url 'accounts:login' %}" class="text-brand font-semibold">Login</a> to comment.</p>
+  {% endif %}
+
+  {% for c in top_comments %}
+    <div class="border-t border-neutral-100 dark:border-neutral-800 py-2.5" id="comment-{{ c.pk }}">
+      <strong class="text-[13px]">@{{ c.user.username }}</strong> <small class="text-muted">{{ c.created_at|timesince }} ago</small>
+      <p class="text-sm my-1">{{ c.content }}</p>
+      {% if user.is_authenticated %}
+        <div class="flex gap-2 text-xs">
+          <a href="#" class="text-muted hover:text-brand" onclick="document.getElementById('reply-{{ c.pk }}').style.display='flex'; return false;">Reply</a>
+          {% if c.user == user %}
+            <a href="{% url 'posts:comment_edit' c.pk %}" class="text-muted hover:text-brand">Edit</a>
+            <form method="post" action="{% url 'posts:comment_delete' c.pk %}" class="inline">{% csrf_token %}<button type="submit" class="text-danger text-xs">Delete</button></form>
+            <small class="text-muted">(5 min limit)</small>
+          {% endif %}
+        </div>
+        <form method="post" action="{% url 'posts:comment_create' post.pk %}" id="reply-{{ c.pk }}" style="display:none;" class="mt-1.5 gap-1.5">
+          {% csrf_token %}
+          <input type="hidden" name="parent_id" value="{{ c.pk }}">
+          <input type="text" name="content" placeholder="Reply to @{{ c.user.username }}..." maxlength="200" required class="input flex-1">
+          <button type="submit" class="btn !py-1.5 !text-xs shrink-0">Reply</button>
+        </form>
+      {% endif %}
+      {% for reply in c.replies.all %}
+        <div class="ml-5 border-l-2 border-neutral-100 dark:border-neutral-700 pl-2 mt-2" id="comment-{{ reply.pk }}">
+          <strong class="text-xs">@{{ reply.user.username }} → reply</strong> <small class="text-muted">{{ reply.created_at|timesince }}</small>
+          <p class="text-[13px]">{{ reply.content }}</p>
+          {% if reply.user == user %}
+            <div class="flex gap-2 text-[11px]">
+              <a href="{% url 'posts:comment_edit' reply.pk %}" class="text-muted hover:text-brand">Edit</a>
+              <form method="post" action="{% url 'posts:comment_delete' reply.pk %}" class="inline">{% csrf_token %}<button type="submit" class="text-danger text-[11px]">Delete</button></form>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% empty %}
+    <p class="text-muted text-[13px]">No comments yet.</p>
+  {% endfor %}
+  <p class="text-xs text-muted mt-2.5"><a href="{% url 'posts:feed' %}">← Back to Feed</a></p>
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+{% if user.is_authenticated %}
+document.getElementById('like-btn-detail')?.addEventListener('click', function() {
+  fetch("{% url 'posts:like_toggle' post.pk %}", {
+    method: 'POST',
+    headers: { 'X-CSRFToken': getCSRF(), 'X-Requested-With': 'XMLHttpRequest' }
+  }).then(r => r.json()).then(d => {
+    document.getElementById('like-count').textContent = d.likes_count;
+    this.innerHTML = (d.is_liked ? '❤️ Liked' : '🤍 Like') + ' (<span id="like-count">' + d.likes_count + '</span>)';
+    this.className = d.is_liked ? 'btn btn-danger' : 'btn btn-outline';
+  });
+});
+// Auto-refresh comments every 10s — no manual F5
+setInterval(() => {
+  if (document.hidden) return;
+  fetch(window.location.pathname, { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+    .then(r => r.text()).then(html => {
+      // simple: reload if new comment count differs (check via API)
+      fetch("{% url 'posts:detail' post.pk %}".replace('/posts/','/api/posts/'), { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+        .then(r=>r.json()).then(d=> {
+          const cur = document.querySelectorAll('[id^="comment-"]').length;
+          if (d.comments_count !== cur) location.reload();
+        }).catch(()=>{});
+    });
+}, 10000);
+{% endif %}
+</script>
+{% endblock %}

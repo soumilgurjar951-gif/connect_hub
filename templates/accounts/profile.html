@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}@{{ profile.username }} - ConnectHub{% endblock %}
+{% block content %}
+<div class="max-w-[935px] mx-auto">
+  <!-- Header -->
+  <header class="flex flex-col sm:flex-row gap-6 sm:gap-10 pb-7 border-b border-line dark:border-neutral-700">
+    <div class="shrink-0 mx-auto sm:mx-0">
+      <div class="story-ring !p-[3px]">
+        {% if profile.avatar %}
+          <img src="{{ profile.avatar.url }}" class="w-[100px] h-[100px] sm:w-[150px] sm:h-[150px] rounded-full object-cover border-4 border-white dark:border-neutral-900" alt="avatar">
+        {% else %}
+          <div class="w-[100px] h-[100px] sm:w-[150px] sm:h-[150px] rounded-full bg-neutral-100 dark:bg-neutral-800 border-4 border-white dark:border-neutral-900 flex items-center justify-center text-5xl font-bold">{{ profile.username|slice:":1"|upper }}</div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="flex-1 min-w-0 text-center sm:text-left">
+      <div class="flex items-center justify-center sm:justify-start gap-2 sm:gap-3 flex-wrap">
+        <h2 class="font-light text-xl">{{ profile.username }}</h2>
+        {% if is_own_profile %}
+          <a href="{% url 'accounts:profile_edit' %}" class="btn btn-outline !py-1.5 !text-sm">Edit profile</a>
+          <a href="{% url 'posts:create' %}" class="hidden sm:inline-flex btn !py-1.5 !text-sm">Share</a>
+        {% elif user.is_authenticated %}
+          <button id="follow-btn" data-username="{{ profile.username }}" class="btn {% if is_following %}btn-outline{% endif %} !py-1.5 !text-sm min-w-[90px]">
+            {% if is_following %}Following{% else %}Follow{% endif %}
+          </button>
+          <a href="{% url 'chat:chat_detail' profile.username %}" class="btn btn-outline !py-1.5 !text-sm">Message</a>
+        {% endif %}
+        <div class="relative">
+          <button id="more-btn" class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center">⋯</button>
+          <div id="more-menu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-800 border border-line dark:border-neutral-700 rounded-lg shadow-lg py-1 text-sm z-10">
+            <button onclick="navigator.clipboard.writeText(window.location.href); this.textContent='Copied!'" class="w-full text-left px-3 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-700">Copy link</button>
+            {% if not is_own_profile %}<a href="#" class="block px-3 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-danger">Report</a>{% endif %}
+            <a href="/explore/" class="block px-3 py-2 hover:bg-neutral-50 dark:hover:bg-neutral-700">Find people</a>
+          </div>
+        </div>
+      </div>
+      <div class="flex justify-center sm:justify-start gap-6 mt-4 text-[15px]">
+        <span><b id="posts-count">{{ posts_count }}</b> posts</span>
+        <a href="{% url 'accounts:followers' profile.username %}" class="hover:underline"><b id="followers-count">{{ profile.followers_count }}</b> followers</a>
+        <a href="{% url 'accounts:following' profile.username %}" class="hover:underline"><b id="following-count">{{ profile.following_count }}</b> following</a>
+      </div>
+      <div class="mt-4 text-sm">
+        <div class="font-semibold">{{ profile.display_name|default:profile.username }}</div>
+        {% if profile.bio %}<p class="whitespace-pre-wrap">{{ profile.bio }}</p>{% else %}<p class="text-muted text-sm">No bio yet. ✨</p>{% endif %}
+        <p class="text-muted text-[13px] break-all">{{ profile.user.email }}</p>
+        <p class="text-muted text-xs mt-1">Joined {{ profile.created_at|date:"M Y" }} • New Delhi, India</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tabs - PROPER WORKING -->
+  <div class="border-b border-line dark:border-neutral-700 flex justify-center gap-8 sm:gap-10 text-xs tracking-widest sticky top-[52px] bg-[#fafafa]/90 dark:bg-black/90 backdrop-blur z-10">
+    <button data-tab="posts" class="tab-btn py-3 border-t -mt-px font-semibold border-ink dark:border-white">▦ POSTS</button>
+    <button data-tab="reels" class="tab-btn py-3 border-t -mt-px border-transparent text-muted hover:text-ink">▶ REELS</button>
+    <button data-tab="tagged" class="tab-btn py-3 border-t -mt-px border-transparent text-muted hover:text-ink">⊡ TAGGED</button>
+  </div>
+
+  <!-- Tab contents -->
+  <div id="tab-posts">
+    {% if posts %}
+      <div class="grid grid-cols-3 gap-1 mt-1">
+        {% for post in posts %}
+          <a href="{% url 'posts:detail' post.pk %}" class="group relative aspect-square bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+            {% if post.images.all %}
+              {% with post.images.all.0 as img %}
+                <img src="{{ img.image.url }}" class="w-full h-full object-cover group-hover:scale-[1.02] transition" alt="">
+              {% endwith %}
+              {% if post.images.all|length > 1 %}<span class="absolute top-2 right-2 text-white text-base drop-shadow">▦</span>{% endif %}
+            {% else %}
+              <div class="w-full h-full flex items-center justify-center p-3 text-[13px] text-center overflow-hidden bg-white dark:bg-neutral-900">{{ post.content|truncatechars:80 }}</div>
+            {% endif %}
+            <div class="thumb-overlay absolute inset-0 bg-black/30 flex items-center justify-center gap-3 text-white font-semibold">
+              <span>❤️ {{ post.likes.count }}</span><span>💬 {{ post.comments.count }}</span>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="card mt-1 p-10 sm:p-14 text-center">
+        <div class="w-[62px] h-[62px] rounded-full border-2 border-ink dark:border-white flex items-center justify-center mx-auto text-[28px]">📷</div>
+        <h3 class="mt-3 font-light text-[22px]">Share a photo</h3>
+        <p class="text-muted text-sm mt-2">When you share photos, they'll appear on your profile.</p>
+        {% if is_own_profile %}<a href="{% url 'posts:create' %}" class="inline-block mt-3 text-brand font-semibold hover:underline">Share your first photo</a>{% else %}<p class="text-muted text-sm mt-2">No posts yet.</p>{% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <div id="tab-reels" class="hidden">
+    <div class="card mt-1 p-10 text-center">
+      <div class="text-3xl">▶</div>
+      <h3 class="mt-2 font-semibold">No reels yet</h3>
+      <p class="text-muted text-sm mt-1">Reels are short videos. Create one from Create → video.</p>
+      {% if is_own_profile %}<a href="{% url 'posts:create' %}" class="btn mt-3 !text-xs">Create reel</a>{% endif %}
+    </div>
+  </div>
+
+  <div id="tab-tagged" class="hidden">
+    {% if tagged_posts %}
+      <div class="grid grid-cols-3 gap-1 mt-1">
+        {% for post in tagged_posts %}
+          <a href="{% url 'posts:detail' post.pk %}" class="group relative aspect-square bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
+            {% if post.images.all %}
+              {% with post.images.all.0 as img %}<img src="{{ img.image.url }}" class="w-full h-full object-cover group-hover:scale-[1.02] transition" alt="">{% endwith %}
+            {% else %}
+              <div class="w-full h-full flex items-center justify-center p-3 text-[13px] text-center overflow-hidden bg-white dark:bg-neutral-900">{{ post.content|truncatechars:80 }}</div>
+            {% endif %}
+            <div class="absolute inset-0 bg-black/30 flex items-center justify-center gap-2 text-white font-semibold opacity-0 group-hover:opacity-100 transition">
+              <span>❤️ {{ post.likes.count }}</span>
+            </div>
+            <span class="absolute bottom-1 left-1 bg-brand text-white text-[10px] px-1.5 py-0.5 rounded-full">Tagged</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+    <div class="card mt-1 p-10 text-center">
+      <div class="text-3xl">⊡</div>
+      <h3 class="mt-2 font-semibold">No tagged posts</h3>
+      <p class="text-muted text-sm mt-1">When someone tags @{{ profile.username }}, they'll appear here. Try tagging in <a href="{% url 'posts:create' %}" class="text-brand">Create Post → Tag people</a>.</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Suggested (profile ke niche, jo follow nahi karta vo) -->
+  {% if suggested %}
+  <div class="mt-8">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-sm font-semibold">Suggested for you</span>
+      <a href="{% url 'accounts:suggested' %}" class="text-xs font-semibold text-brand">See all</a>
+    </div>
+    <div class="card p-3 flex gap-4 overflow-x-auto no-scrollbar">
+      {% for p in suggested %}
+        <a href="{% url 'accounts:profile' p.username %}" class="shrink-0 flex flex-col items-center gap-1.5 w-[76px] group">
+          <div class="story-ring !p-[2px] group-hover:opacity-90 transition">
+            <div class="w-14 h-14 rounded-full bg-neutral-100 dark:bg-neutral-800 border-2 border-white dark:border-neutral-900 flex items-center justify-center font-bold text-sm">{{ p.username|slice:":1"|upper }}</div>
+          </div>
+          <span class="text-[11px] font-medium truncate w-full text-center">{{ p.username }}</span>
+          <span class="text-[11px] text-brand font-semibold group-hover:underline">View</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('border-ink','dark:border-white','font-semibold','text-ink','dark:text-white');
+      b.classList.add('border-transparent','text-muted');
+    });
+    btn.classList.add('border-ink','dark:border-white','font-semibold');
+    btn.classList.remove('border-transparent','text-muted');
+    const tab = btn.dataset.tab;
+    document.getElementById('tab-posts').classList.toggle('hidden', tab !== 'posts');
+    document.getElementById('tab-reels').classList.toggle('hidden', tab !== 'reels');
+    document.getElementById('tab-tagged').classList.toggle('hidden', tab !== 'tagged');
+  });
+});
+// Follow AJAX
+const followBtn = document.getElementById('follow-btn');
+if (followBtn) {
+  followBtn.addEventListener('click', async () => {
+    const username = followBtn.dataset.username;
+    followBtn.disabled = true;
+    try {
+      const res = await fetch(`/accounts/follow/${username}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCSRF(), 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const data = await res.json();
+      followBtn.textContent = data.is_following ? 'Following' : 'Follow';
+      followBtn.className = 'btn !py-1.5 !text-sm min-w-[90px] ' + (data.is_following ? 'btn-outline' : '');
+      // update count optimistically
+      const fc = document.getElementById('followers-count');
+      if (fc) {
+        let n = parseInt(fc.textContent) || 0;
+        fc.textContent = data.is_following ? n + 1 : Math.max(0, n - 1);
+      }
+      if (data.followers_count !== undefined) {
+        document.getElementById('followers-count').textContent = data.followers_count;
+      }
+    } catch {}
+    followBtn.disabled = false;
+  });
+}
+// More menu
+const moreBtn = document.getElementById('more-btn');
+const moreMenu = document.getElementById('more-menu');
+if (moreBtn && moreMenu) {
+  moreBtn.addEventListener('click', () => moreMenu.classList.toggle('hidden'));
+  document.addEventListener('click', (e) => {
+    if (!moreMenu.contains(e.target) && e.target !== moreBtn) moreMenu.classList.add('hidden');
+  });
+}
+</script>
+{% endblock %}
+

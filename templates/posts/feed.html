@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}ConnectHub - Home{% endblock %}
+{% block content %}
+<div class="max-w-[975px] mx-auto flex gap-6 justify-center">
+  <!-- CENTER -->
+  <div class="flex-1 max-w-[630px] min-w-0">
+
+    {% if is_authenticated %}
+    <!-- STORIES — jo share kare vo dikhega -->
+    <div class="card p-0 mb-4 overflow-hidden">
+      <div class="flex gap-3 px-3 py-3 overflow-x-auto no-scrollbar">
+        <a href="{% url 'accounts:story_create' %}" class="shrink-0 flex flex-col items-center gap-1.5 w-[72px] text-center">
+          <div class="w-[56px] h-[56px] rounded-full bg-neutral-100 dark:bg-neutral-800 border-2 border-dashed border-line dark:border-neutral-600 flex items-center justify-center text-lg">＋</div>
+          <span class="text-[11px] font-semibold">Your story</span>
+          <span class="text-[9px] -mt-1 text-brand">Add</span>
+        </a>
+        {% for s in stories %}
+          {% if s.user_id != user.id %}
+            {% if s.has_story and s.story_id %}
+            <a href="{% url 'accounts:story_detail' s.story_id %}" class="shrink-0 flex flex-col items-center gap-1.5 w-[72px] text-center">
+              <div class="story-ring">
+                {% if s.avatar %}<img src="{{ s.avatar.url }}" class="w-[56px] h-[56px] rounded-full object-cover border-2 border-white dark:border-neutral-900">
+                {% else %}<div class="w-[56px] h-[56px] rounded-full bg-neutral-100 dark:bg-neutral-700 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-sm font-bold">{{ s.username|slice:":1"|upper }}</div>{% endif %}
+              </div>
+              <span class="text-[11px] leading-none truncate w-full">{{ s.username|truncatechars:10 }}</span>
+              {% if s.user_id in story_mentions %}<span class="text-[9px] -mt-1 text-brand font-semibold">@mention</span>{% endif %}
+            </a>
+            {% else %}
+            <a href="{% url 'accounts:profile' s.username %}" class="shrink-0 flex flex-col items-center gap-1.5 w-[72px] text-center opacity-60">
+              <div class="w-[56px] h-[56px] rounded-full bg-neutral-100 dark:bg-neutral-700 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-sm font-bold">{{ s.username|slice:":1"|upper }}</div>
+              <span class="text-[11px] leading-none truncate w-full">{{ s.username|truncatechars:10 }}</span>
+            </a>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if not is_authenticated %}
+    <div class="card p-8 text-center">
+      <div class="font-logo text-[42px] mb-2">ConnectHub</div>
+      <h3 class="font-semibold">Welcome 👋</h3>
+      <p class="text-muted text-sm mt-2">Simple Instagram + Twitter. <a href="{% url 'accounts:login' %}" class="text-brand font-semibold">Login</a> ya <a href="{% url 'accounts:signup' %}" class="text-brand font-semibold">Signup</a> karo.</p>
+    </div>
+    {% endif %}
+
+    <div id="feed" class="flex flex-col gap-4">
+      {% for post in page_obj %}
+        <article class="card overflow-hidden" data-post="{{ post.pk }}">
+          <div class="flex items-center gap-2.5 px-3 py-2.5">
+            <a href="{% url 'accounts:profile' post.author.profile.username %}" class="story-ring !p-[2px]">
+              {% if post.author.profile.avatar %}<img src="{{ post.author.profile.avatar.url }}" class="w-8 h-8 rounded-full object-cover border-2 border-white dark:border-neutral-900">
+              {% else %}<div class="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-700 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-xs font-bold">{{ post.author.username|slice:":1"|upper }}</div>{% endif %}
+            </a>
+            <div class="flex-1 min-w-0">
+              <a href="{% url 'accounts:profile' post.author.profile.username %}" class="font-semibold text-sm">@{{ post.author.profile.username|default:post.author.username }}</a>
+              <div class="text-[11px] text-muted">{{ post.created_at|timesince }} ago • following</div>
+            </div>
+          </div>
+          <p class="px-3 pb-2 text-[14px] whitespace-pre-wrap">{{ post.content }}</p>
+          {% if post.location %}<p class="px-3 pb-1 text-xs text-muted">📍 {{ post.location }}</p>{% endif %}
+          {% if post.tagged %}<p class="px-3 pb-1 text-xs text-brand">Tag: {{ post.tagged }}</p>{% endif %}
+          {% if post.images.all %}
+            <div class="flex gap-1.5 overflow-x-auto no-scrollbar px-3 pb-1">
+              {% for img in post.images.all %}<img src="{{ img.image.url }}" class="w-[300px] h-[300px] object-cover rounded-lg border border-line dark:border-neutral-700 shrink-0">{% endfor %}
+            </div>
+          {% endif %}
+          <div class="flex items-center gap-3 px-3 py-2.5 text-[13px] text-muted border-t border-neutral-50 dark:border-neutral-800 mt-1">
+            {% if user.is_authenticated %}
+              <button class="like-btn border border-brand text-brand rounded-full px-3 py-1 text-xs font-semibold hover:bg-sky-50" data-post="{{ post.pk }}">{% if post.pk in liked_ids %}❤️{% else %}🤍{% endif %} <span class="like-count">{{ post.likes.count }}</span></button>
+            {% else %}<span>❤️ {{ post.likes.count }}</span>{% endif %}
+            <a href="{% url 'posts:detail' post.pk %}" class="hover:text-brand">💬 {{ post.comments.count }}</a>
+            <a href="{% url 'posts:detail' post.pk %}" class="ml-auto text-brand font-medium">View →</a>
+          </div>
+        </article>
+      {% empty %}
+        <div class="card p-8 text-center text-muted">
+          <div class="text-4xl mb-2">📸</div>
+          <p class="font-medium">No posts yet</p>
+          <p class="text-sm mt-1">Jinko follow kiya hai unki posts yahan ayengi.</p>
+          <a href="/explore/" class="btn mt-3">Find people</a>
+        </div>
+      {% endfor %}
+    </div>
+
+    {% if page_obj.has_next %}
+      <div id="loader" class="text-center py-3 text-muted text-[13px]">Scroll for more... (Page {{ page_obj.number }})</div>
+      <div class="text-center mt-2"><a href="?page={{ page_obj.next_page_number }}" class="btn btn-outline" id="next-btn">Load More →</a></div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT RAIL — Suggested only -->
+  {% if is_authenticated %}
+  <aside class="hidden lg:block w-[320px] shrink-0">
+    <div class="sticky top-[70px] flex flex-col gap-4">
+      <div class="card p-4">
+        <div class="flex items-center justify-between">
+          <span class="font-semibold text-sm">Suggested for you</span>
+          <a href="{% url 'accounts:suggested' %}" class="text-xs font-semibold">See all</a>
+        </div>
+        {% for p in suggested %}
+        <div class="flex items-center gap-3 mt-3">
+          <div class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center font-bold text-xs">{{ p.username|slice:":1"|upper }}</div>
+          <div class="flex-1 min-w-0">
+            <div class="font-semibold text-sm leading-none">@{{ p.username }}</div>
+            <div class="text-xs text-muted truncate">Suggested</div>
+          </div>
+          <a href="{% url 'accounts:profile' p.username %}" class="text-xs font-semibold text-brand">View</a>
+        </div>
+        {% empty %}
+        <p class="text-xs text-muted mt-2">No suggestions. Search se dhoondho.</p>
+        {% endfor %}
+      </div>
+
+    </div>
+  </aside>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.like-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const pk = btn.dataset.post;
+    fetch(`/posts/${pk}/like/`, { method: 'POST', headers: { 'X-CSRFToken': getCSRF(), 'X-Requested-With': 'XMLHttpRequest' }})
+      .then(r => r.json()).then(d => {
+        btn.classList.add('heart-pop'); setTimeout(()=>btn.classList.remove('heart-pop'),450);
+        btn.innerHTML = (d.is_liked ? '❤️' : '🤍') + ' <span class="like-count">' + d.likes_count + '</span>';
+      });
+  });
+});
+let nextPage = {% if page_obj.has_next %}{{ page_obj.next_page_number }}{% else %}null{% endif %};
+let loading = false;
+window.addEventListener('scroll', () => {
+  if (!nextPage || loading) return;
+  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500) {
+    loading = true;
+    fetch(`?page=${nextPage}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+      .then(r => r.json()).then(data => {
+        const feed = document.getElementById('feed');
+        data.posts.forEach(p => {
+          const div = document.createElement('div');
+          div.className = 'card overflow-hidden';
+          div.innerHTML = `<div class="flex items-center gap-2.5 px-3 py-2.5"><div class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-xs font-bold">${p.author[0].toUpperCase()}</div><strong class="text-sm">@${p.author}</strong></div><p class="px-3 pb-2 text-sm" style="white-space:pre-wrap;">${p.content}</p>`;
+          feed.appendChild(div);
+        });
+        if (data.has_next) { nextPage = data.next_page; loading = false; } else nextPage = null;
+      }).catch(() => { loading = false; });
+  }
+});
+// Auto-refresh: har 10 sec naya post check — manual F5 khatam
+{% if is_authenticated %}
+(function(){
+  let firstId = document.querySelector('[data-post]')?.dataset.post || 0;
+  const banner = document.createElement('div');
+  banner.className = 'hidden card p-3 mb-3 text-center bg-sky-50 dark:bg-sky-950/30 border-sky-200 cursor-pointer';
+  banner.innerHTML = '🔔 <span id="new-count">0</span> new posts — tap to show';
+  const feed = document.getElementById('feed');
+  feed.parentNode.insertBefore(banner, feed);
+  let newPosts = [];
+  setInterval(() => {
+    if (document.hidden) return;
+    fetch(`?page=1`, { headers: { 'X-Requested-With': 'XMLHttpRequest' }})
+      .then(r => r.json()).then(data => {
+        const fresh = data.posts.filter(p => !document.querySelector(`[data-post="${p.id}"]`));
+        if (fresh.length) {
+          newPosts = [...fresh, ...newPosts];
+          document.getElementById('new-count').textContent = newPosts.length;
+          banner.classList.remove('hidden');
+        }
+      });
+  }, 10000);
+  banner.onclick = () => {
+    newPosts.reverse().forEach(p => {
+      const div = document.createElement('div');
+      div.className = 'card overflow-hidden';
+      div.dataset.post = p.id;
+      div.innerHTML = `<div class="flex items-center gap-2.5 px-3 py-2.5"><div class="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-xs font-bold">${p.author[0].toUpperCase()}</div><strong class="text-sm">@${p.author}</strong><span class="text-[11px] text-muted ml-auto">now</span></div><p class="px-3 pb-2 text-[14px]" style="white-space:pre-wrap;">${p.content}</p><div class="px-3 pb-2 text-xs text-muted">${p.likes_count} likes • <a class="text-brand" href="/posts/${p.id}/">View →</a></div>`;
+      feed.prepend(div);
+    });
+    newPosts = [];
+    banner.classList.add('hidden');
+    window.scrollTo({top:0, behavior:'smooth'});
+  };
+})();
+{% endif %}
+</script>
+{% endblock %}
+

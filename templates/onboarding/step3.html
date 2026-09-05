@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Step 3 — Make it yours{% endblock %}
+{% block content %}
+<div class="max-w-[520px] mx-auto">
+  <div class="text-center mb-4">
+    <div class="text-xs tracking-widest text-muted">Step 3 of 3</div>
+    <div class="h-1.5 bg-neutral-100 dark:bg-neutral-800 rounded-full mt-1"><div class="h-full bg-brand rounded-full" style="width:100%"></div></div>
+    <h2 class="font-display text-[22px] font-semibold mt-3">Make it yours</h2>
+    <p class="text-muted text-sm">A photo + bio gets 3x more follows.</p>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="card p-4 flex flex-col items-center gap-3">
+      <div class="w-20 h-20 rounded-full bg-neutral-100 flex items-center justify-center overflow-hidden border-2 border-white shadow">
+        {% if profile.avatar %}<img src="{{ profile.avatar.url }}" class="w-full h-full object-cover">{% else %}<span class="text-2xl">{{ profile.username|slice:":1"|upper }}</span>{% endif %}
+      </div>
+      <input type="file" name="avatar" accept="image/*" class="text-xs">
+      <p class="text-[11px] text-muted">JPG/PNG max 5MB</p>
+    </div>
+
+    <div class="card p-4 mt-3">
+      <label class="text-sm font-semibold">Display name</label>
+      <input name="display_name" value="{{ profile.display_name }}" placeholder="Soumil Gurjar" maxlength="50" class="input mt-1">
+      <label class="text-sm font-semibold mt-3 block">Bio</label>
+      <textarea name="bio" rows="2" maxlength="150" placeholder="Creator • Delhi • I post..." class="input mt-1 resize-none">{{ profile.bio }}</textarea>
+      <div class="text-right text-[11px] text-muted"><span id="bio-count">0</span>/150</div>
+    </div>
+
+    <div class="flex gap-2 mt-4">
+      <a href="{% url 'accounts:onboarding_step2' %}" class="btn btn-outline flex-1 justify-center">← Back</a>
+      <button type="submit" class="btn flex-1 justify-center">Done — See my feed 🎉</button>
+    </div>
+    <div class="text-center mt-2"><a href="/" class="text-xs text-muted">Do it later</a></div>
+  </form>
+</div>
+<script>
+  const ta = document.querySelector('textarea[name=bio]');
+  const c = document.getElementById('bio-count');
+  if (ta && c) { const upd=()=>c.textContent=ta.value.length; ta.addEventListener('input',upd); upd(); }
+</script>
+{% endblock %}
+

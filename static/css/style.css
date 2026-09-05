@@ -1,0 +1,66 @@
+/* ConnectHub - custom CSS (Tailwind handles most styling) */
+
+/* Story ring gradient */
+.story-ring {
+  background: linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
+  padding: 2px;
+  border-radius: 9999px;
+  display: inline-flex;
+}
+
+/* Hide scrollbars for horizontal strips */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Like heart pop animation */
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.3); }
+  30% { transform: scale(0.95); }
+  45% { transform: scale(1.15); }
+  80% { transform: scale(1); }
+}
+.heart-pop { animation: heartPop 0.45s ease; }
+
+/* Django form widgets ({{ form.field }}) ko Tailwind jaisa look */
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="email"],
+.form-group input[type="number"],
+.form-group input[type="url"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #dbdbdb;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+}
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #0095f6;
+}
+.dark .form-group input,
+.dark .form-group textarea,
+.dark .form-group select {
+  background: #262626;
+  border-color: #525252;
+  color: #f5f5f5;
+}
+
+/* Profile grid hover overlay */
+.thumb-overlay { opacity: 0; transition: opacity 0.15s ease; }
+.group:hover .thumb-overlay { opacity: 1; }
+
+/* Skeleton shimmer (loading) */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #efefef 25%, #e0e0e0 50%, #efefef 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.2s infinite linear;
+}

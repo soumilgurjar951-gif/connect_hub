@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Add Story{% endblock %}
+{% block content %}
+<div class="max-w-[420px] mx-auto card p-6 text-center">
+  <h2 class="font-semibold">Add to Story</h2>
+  <p class="text-muted text-xs mt-1">24 hours ke liye dikhega • 5MB max</p>
+  <form method="post" enctype="multipart/form-data" class="mt-4">
+    {% csrf_token %}
+    <input type="file" name="image" accept="image/*" required class="block w-full text-sm">
+    <button type="submit" class="btn w-full mt-3">Share story</button>
+  </form>
+  <a href="/" class="text-sm text-muted mt-2 inline-block">Cancel</a>
+</div>
+{% endblock %}

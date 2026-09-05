@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Suggested - ConnectHub{% endblock %}
+{% block content %}
+<div class="max-w-[600px] mx-auto">
+  <div class="flex items-center gap-3 mb-4">
+    <a href="/" class="w-8 h-8 rounded-full border border-line dark:border-neutral-700 flex items-center justify-center">←</a>
+    <h2 class="font-semibold">Suggested for you</h2>
+    <span class="ml-auto text-xs text-muted">{{ suggestions|length }} suggestions</span>
+  </div>
+
+  {% for p in suggestions %}
+    <div class="card p-3 mb-2 flex items-center gap-3">
+      <a href="{% url 'accounts:profile' p.username %}" class="w-10 h-10 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center font-bold shrink-0">{{ p.username|slice:":1"|upper }}</a>
+      <div class="flex-1 min-w-0">
+        <a href="{% url 'accounts:profile' p.username %}" class="font-semibold text-sm hover:underline">@{{ p.username }}</a>
+        <div class="text-xs text-muted truncate">{{ p.bio|default:"Suggested" }} • {{ p.followers_count }} followers</div>
+      </div>
+      <form method="post" action="{% url 'accounts:follow_toggle' p.username %}?next={{ request.path }}">{% csrf_token %}<button type="submit" class="btn !py-1 !text-xs">Follow</button></form>
+      <a href="{% url 'accounts:profile' p.username %}" class="btn btn-outline !py-1 !text-xs">View</a>
+    </div>
+  {% empty %}
+    <div class="card p-8 text-center text-muted">
+      <p>No suggestions — everyone followed! 🎉</p>
+      <a href="/explore/" class="text-brand text-sm">Explore more</a>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

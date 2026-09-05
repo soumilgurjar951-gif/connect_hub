@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Story @{{ story.user.username }}{% endblock %}
+{% block content %}
+<div class="max-w-[420px] mx-auto">
+  <!-- Premium story viewer -->
+  <div class="card p-0 overflow-hidden bg-black">
+    <!-- Progress -->
+    <div class="h-1 bg-white/20 w-full"><div class="h-full bg-white" style="width:100%; animation: fill 5s linear;"></div></div>
+    <div class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-neutral-900">
+      <a href="{% url 'accounts:profile' story.user.profile.username %}" class="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-violet-500 p-[2px]"><span class="w-full h-full rounded-full bg-white dark:bg-neutral-900 flex items-center justify-center font-bold text-xs">{{ story.user.username|slice:":1"|upper }}</span></a>
+      <div class="flex-1 min-w-0">
+        <span class="font-semibold text-sm">@{{ story.user.profile.username }}</span>
+        <span class="text-xs text-muted ml-1">{{ story.created_at|timesince }} ago</span>
+      </div>
+      <span class="text-xs bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded-full">expires {{ story.expires_at|time:"H:i" }}</span>
+      <a href="/" class="w-7 h-7 rounded-full hover:bg-neutral-100 flex items-center justify-center">✕</a>
+    </div>
+    <div class="relative bg-black flex items-center justify-center" style="min-height:520px;">
+      <img src="{{ story.image.url }}" class="w-full max-h-[68vh] object-contain">
+      {% if is_owner %}
+        <button id="seen-toggle" class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur text-white text-xs px-3 py-1.5 rounded-full flex items-center gap-1.5">
+          👁 {{ viewers|length }} seen — tap to view
+        </button>
+      {% endif %}
+    </div>
+    <div class="p-3 flex gap-2 bg-white dark:bg-neutral-900">
+      <a href="{% url 'accounts:profile' story.user.profile.username %}" class="btn btn-outline flex-1 text-center !py-1.5">View profile</a>
+      <a href="/" class="btn flex-1 text-center !py-1.5">Back to feed</a>
+    </div>
+  </div>
+
+  <!-- Seen list — owner tap kare to dikhega -->
+  {% if is_owner %}
+  <div id="seen-panel" class="card mt-3 p-0 overflow-hidden hidden">
+    <div class="px-4 py-3 border-b border-line dark:border-neutral-700 flex items-center justify-between">
+      <span class="font-semibold text-sm">Seen by {{ viewers|length }}</span>
+      <button id="seen-close" class="w-7 h-7 rounded-full hover:bg-neutral-100 flex items-center justify-center">✕</button>
+    </div>
+    {% for v in viewers %}
+      <div class="flex items-center gap-3 px-4 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+        <div class="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-700 flex items-center justify-center font-bold text-xs">{{ v.viewer.username|slice:":1"|upper }}</div>
+        <div class="flex-1 min-w-0">
+          <a href="{% url 'accounts:profile' v.viewer.profile.username %}" class="font-semibold text-sm hover:underline">@{{ v.viewer.profile.username }}</a>
+          <div class="text-xs text-muted">{{ v.viewed_at|timesince }} ago</div>
+        </div>
+        <a href="{% url 'accounts:profile' v.viewer.profile.username %}" class="text-xs font-semibold text-brand">View</a>
+      </div>
+    {% empty %}
+      <div class="p-8 text-center">
+        <div class="text-2xl">👁️</div>
+        <p class="text-sm font-medium mt-1">No views yet</p>
+        <p class="text-xs text-muted">When someone sees your story, they'll appear here.</p>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+<style>
+  @keyframes fill { from { width:0 } to { width:100% } }
+</style>
+{% endblock %}
+{% block scripts %}
+{% if is_owner %}
+<script>
+  const toggle = document.getElementById('seen-toggle');
+  const panel = document.getElementById('seen-panel');
+  const close = document.getElementById('seen-close');
+  if (toggle && panel) {
+    toggle.addEventListener('click', () => panel.classList.toggle('hidden'));
+    if (close) close.addEventListener('click', () => panel.classList.add('hidden'));
+    // tap on image also toggles
+    document.querySelector('img').addEventListener('click', () => panel.classList.toggle('hidden'));
+  }
+</script>
+{% endif %}
+{% endblock %}

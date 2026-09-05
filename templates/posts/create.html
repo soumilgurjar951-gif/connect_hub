@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Create Post - ConnectHub{% endblock %}
+{% block content %}
+<div class="max-w-[640px] mx-auto">
+  <div class="flex items-center gap-3 mb-4">
+    <a href="{% url 'posts:feed' %}" class="w-9 h-9 rounded-full bg-white dark:bg-neutral-800 border border-line dark:border-neutral-700 flex items-center justify-center">←</a>
+    <div>
+      <h1 class="text-[20px] font-semibold leading-none">Create new post</h1>
+      <p class="text-xs text-muted">Share a moment with your followers</p>
+    </div>
+  </div>
+
+  <div class="card overflow-hidden p-0">
+    <div class="flex items-center gap-3 px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
+      {% if user.profile.avatar %}<img src="{{ user.profile.avatar.url }}" class="w-9 h-9 rounded-full object-cover">
+      {% else %}<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-violet-500 flex items-center justify-center text-white font-bold text-sm">{{ user.username|slice:":1"|upper }}</div>{% endif %}
+      <div class="flex-1 min-w-0">
+        <div class="font-semibold text-sm leading-none">@{{ user.username }}</div>
+        <div class="text-[11px] text-muted">🌍 Public • Followers will see this</div>
+      </div>
+      <span class="text-[11px] text-muted">500 max</span>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="post-form">
+      {% csrf_token %}
+      <div class="px-4 pt-4">
+        <textarea name="content" id="{{ form.content.id_for_label }}" rows="4" maxlength="500" placeholder="What's on your mind, @{{ user.username }}? ✨" class="w-full resize-none border-0 focus:ring-0 p-0 text-[15px] placeholder:text-muted bg-transparent dark:text-white" required>{{ form.content.value|default_if_none:"" }}</textarea>
+        {% if form.content.errors %}<ul class="errorlist mt-1">{% for e in form.content.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+        <div class="flex items-center gap-2 mt-2">
+          <div class="flex-1 h-1 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden"><div id="char-bar" class="h-full bg-brand" style="width:0%"></div></div>
+          <span class="text-[11px] font-medium"><span id="char-count">0</span>/500</span>
+        </div>
+        <div class="flex gap-1.5 mt-2.5 text-[11px]">
+          <button type="button" id="btn-hashtag" class="px-2.5 py-1 rounded-full bg-neutral-50 dark:bg-neutral-800 border border-line dark:border-neutral-700 hover:bg-violet-50"># Hashtag</button>
+          <button type="button" id="btn-mention" class="px-2.5 py-1 rounded-full bg-neutral-50 dark:bg-neutral-800 border border-line dark:border-neutral-700 hover:bg-sky-50">@ Mention</button>
+          <span class="ml-auto text-muted hidden sm:inline">Tip: drag & drop images</span>
+        </div>
+      </div>
+
+      <div class="px-4 mt-4">
+        <div id="drop-zone" class="group border-2 border-dashed border-line dark:border-neutral-700 rounded-xl bg-neutral-50/60 dark:bg-neutral-900 p-5 text-center hover:border-brand cursor-pointer">
+          <input type="file" name="images" id="id_images" multiple accept="image/*" class="hidden">
+          <div class="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-line flex items-center justify-center mx-auto">🖼️</div>
+          <p class="font-semibold text-sm mt-2">Drag photos here</p>
+          <p class="text-xs text-muted">or <span class="text-brand font-semibold underline">browse</span> • 1–4 images • 5MB each</p>
+        </div>
+        <div id="preview-grid" class="hidden grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3"></div>
+        <p id="file-hint" class="text-[11px] text-muted mt-1.5">No files chosen</p>
+        {% if form.non_field_errors %}<div class="alert alert-danger mt-3">{{ form.non_field_errors }}</div>{% endif %}
+      </div>
+
+      <!-- Functional options -->
+      <div class="mx-4 mt-4 border border-line dark:border-neutral-700 rounded-lg overflow-hidden">
+        <button type="button" id="toggle-location" class="w-full flex items-center justify-between px-3 py-2.5 hover:bg-neutral-50 dark:hover:bg-neutral-800">
+          <span class="text-sm flex items-center gap-2">📍 <span id="loc-label">Add location</span></span>
+          <span class="text-xs text-muted" id="loc-value">Optional</span>
+        </button>
+        <div id="loc-row" class="hidden px-3 pb-3">
+          <input type="text" name="location" id="location-input" placeholder="e.g. New Delhi, India" maxlength="100" class="input">
+        </div>
+        <button type="button" id="toggle-tag" class="w-full flex items-center justify-between px-3 py-2.5 border-t border-line dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800">
+          <span class="text-sm flex items-center gap-2">👤 <span>Tag people</span></span>
+          <span class="text-xs text-muted" id="tag-count">0 tagged</span>
+        </button>
+        <div id="tag-row" class="hidden px-3 pb-3 space-y-2">
+          <div class="flex gap-1.5">
+            <input type="text" id="tag-input" placeholder="Search username..." class="input flex-1 !py-1.5">
+            <button type="button" id="tag-add" class="btn !py-1.5 !text-xs">Add</button>
+          </div>
+          <div id="tag-list" class="flex flex-wrap gap-1.5"></div>
+          <input type="hidden" name="tagged" id="tagged-hidden">
+        </div>
+        <label class="flex items-center gap-2 px-3 py-2.5 border-t border-line dark:border-neutral-700 cursor-pointer">
+          <input type="checkbox" checked class="rounded"><span class="text-sm">Also share to feed</span><span class="ml-auto text-[11px] text-muted">On</span>
+        </label>
+      </div>
+
+      <div class="flex gap-2 px-4 py-4">
+        <a href="{% url 'posts:feed' %}" class="btn btn-outline flex-1 justify-center !py-2.5">Cancel</a>
+        <button type="submit" id="post-btn" class="btn flex-1 justify-center !py-2.5 disabled:opacity-40">Share →</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const ta = document.getElementById('{{ form.content.id_for_label }}');
+  const counter = document.getElementById('char-count');
+  const bar = document.getElementById('char-bar');
+  const postBtn = document.getElementById('post-btn');
+  const fileInput = document.getElementById('id_images');
+  const dropZone = document.getElementById('drop-zone');
+  const previewGrid = document.getElementById('preview-grid');
+  const hint = document.getElementById('file-hint');
+  let filesArr = [];
+
+  function refreshCounter() {
+    const n = ta.value.length;
+    counter.textContent = n;
+    bar.style.width = (n/500*100) + '%';
+    bar.className = 'h-full ' + (n>450?'bg-amber-500':'bg-brand');
+    postBtn.disabled = n===0 && filesArr.length===0;
+  }
+  ta.addEventListener('input', refreshCounter); refreshCounter();
+
+  // Hashtag / Mention
+  document.getElementById('btn-hashtag').onclick = () => {
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    const insert = ta.value ? ' #' : '#';
+    ta.value = ta.value.slice(0,s) + insert + ta.value.slice(e);
+    ta.focus(); ta.selectionStart = ta.selectionEnd = s + insert.length; refreshCounter();
+  };
+  document.getElementById('btn-mention').onclick = () => {
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    const insert = ta.value ? ' @' : '@';
+    ta.value = ta.value.slice(0,s) + insert + ta.value.slice(e);
+    ta.focus(); ta.selectionStart = ta.selectionEnd = s + insert.length; refreshCounter();
+  };
+
+  // Location toggle
+  document.getElementById('toggle-location').onclick = () => {
+    const row = document.getElementById('loc-row');
+    row.classList.toggle('hidden');
+    if (!row.classList.contains('hidden')) document.getElementById('location-input').focus();
+  };
+  document.getElementById('location-input').addEventListener('input', e => {
+    document.getElementById('loc-value').textContent = e.target.value ? '📍 ' + e.target.value : 'Optional';
+  });
+
+  // Tag people
+  const tagInput = document.getElementById('tag-input');
+  const tagList = document.getElementById('tag-list');
+  const taggedHidden = document.getElementById('tagged-hidden');
+  const tagCount = document.getElementById('tag-count');
+  let tags = [];
+  function renderTags() {
+    tagList.innerHTML = '';
+    tags.forEach((u,i) => {
+      const chip = document.createElement('span');
+      chip.className = 'inline-flex items-center gap-1 bg-brand text-white text-xs px-2 py-1 rounded-full';
+      chip.innerHTML = '@' + u + ' <button type="button" data-i="'+i+'" class="ml-1 font-bold">×</button>';
+      chip.querySelector('button').onclick = () => { tags.splice(i,1); syncTags(); renderTags(); };
+      tagList.appendChild(chip);
+    });
+    tagCount.textContent = tags.length ? tags.length + ' tagged' : '0 tagged';
+    taggedHidden.value = tags.join(',');
+  }
+  function syncTags(){ taggedHidden.value = tags.join(','); }
+  document.getElementById('toggle-tag').onclick = () => {
+    document.getElementById('tag-row').classList.toggle('hidden');
+    tagInput.focus();
+  };
+  document.getElementById('tag-add').onclick = () => {
+    const v = tagInput.value.trim().replace('@','');
+    if (v && !tags.includes(v) && tags.length < 5) { tags.push(v); tagInput.value=''; renderTags(); }
+  };
+  tagInput.addEventListener('keydown', e => { if (e.key==='Enter'){ e.preventDefault(); document.getElementById('tag-add').click(); }});
+
+  // Drag & Drop previews
+  function renderPreviews() {
+    previewGrid.innerHTML = '';
+    if (!filesArr.length) { previewGrid.classList.add('hidden'); hint.textContent='No files chosen'; return; }
+    previewGrid.classList.remove('hidden');
+    hint.textContent = filesArr.length + ' selected';
+    filesArr.forEach((file,i) => {
+      const url = URL.createObjectURL(file);
+      const div = document.createElement('div');
+      div.className = 'relative aspect-square overflow-hidden rounded-lg border border-line';
+      div.innerHTML = `<img src="${url}" class="w-full h-full object-cover"><button type="button" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 text-white text-xs">×</button>`;
+      div.querySelector('button').onclick = () => { filesArr.splice(i,1); syncInput(); renderPreviews(); refreshCounter(); };
+      previewGrid.appendChild(div);
+    });
+  }
+  function syncInput(){ const dt=new DataTransfer(); filesArr.slice(0,4).forEach(f=>dt.items.add(f)); fileInput.files=dt.files; }
+  dropZone.onclick = () => fileInput.click();
+  fileInput.onchange = e => { filesArr=[...filesArr, ...[...e.target.files]].slice(0,4); syncInput(); renderPreviews(); refreshCounter(); };
+  ['dragenter','dragover'].forEach(ev=>dropZone.addEventListener(ev,e=>{e.preventDefault(); dropZone.classList.add('border-brand');}));
+  ['dragleave','drop'].forEach(ev=>dropZone.addEventListener(ev,e=>{e.preventDefault(); dropZone.classList.remove('border-brand');}));
+  dropZone.addEventListener('drop', e=>{ filesArr=[...filesArr, ...[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'))].slice(0,4); syncInput(); renderPreviews(); refreshCounter(); });
+</script>
+{% endblock %}

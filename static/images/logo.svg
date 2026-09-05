@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="52" viewBox="0 0 240 52" role="img" aria-label="ConnectHub logo">
+  <defs>
+    <linearGradient id="gh" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FACC15"/>
+      <stop offset="28%" stop-color="#F97316"/>
+      <stop offset="58%" stop-color="#EC4899"/>
+      <stop offset="82%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="wh" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon 44x44 rounded 14 -->
+  <g transform="translate(2,4)">
+    <rect x="0" y="0" width="44" height="44" rx="14" fill="url(#gh)"/>
+    <!-- Hub: central dot + 3 spokes + outer nodes with white stroke - premium -->
+    <circle cx="22" cy="22" r="5" fill="white"/>
+    <circle cx="22" cy="22" r="1.8" fill="#7C3AED" opacity="0.9"/>
+    <!-- nodes -->
+    <g fill="white" stroke="white" stroke-linejoin="round" opacity="0.98">
+      <circle cx="11" cy="13.5" r="3.6"/>
+      <circle cx="33" cy="13.5" r="3.6"/>
+      <circle cx="22" cy="33.5" r="3.8"/>
+    </g>
+    <!-- spokes -->
+    <g stroke="white" stroke-width="1.9" stroke-linecap="round" opacity="0.98">
+      <line x1="22" y1="22" x2="11" y2="13.5"/>
+      <line x1="22" y1="22" x2="33" y2="13.5"/>
+      <line x1="22" y1="22" x2="22" y2="33.5"/>
+    </g>
+    <!-- inner highlight -->
+    <circle cx="11" cy="13.5" r="1.4" fill="#FFE4E6" opacity="0.9"/>
+    <circle cx="33" cy="13.5" r="1.4" fill="#EDE9FE" opacity="0.9"/>
+  </g>
+  <!-- Wordmark: ConnectHub -->
+  <text x="54" y="27.5" font-family="'Sora', Inter, system-ui, sans-serif" font-size="23.5" font-weight="800" letter-spacing="-0.6" fill="#0F172A">Connect</text>
+  <text x="139.5" y="27.5" font-family="'Sora', Inter, system-ui, sans-serif" font-size="23.5" font-weight="800" letter-spacing="-0.6" fill="url(#wh)">Hub</text>
+  <!-- Tagline -->
+  <text x="55.5" y="40.5" font-family="Inter, system-ui, sans-serif" font-size="7.8" font-weight="700" letter-spacing="2.2" fill="#94A3B8">CREATE · SHARE · BELONG</text>
+</svg>

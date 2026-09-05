@@ -1,0 +1,23 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: .env
+    depends_on:
+      - db
+    command: gunicorn connect_hub.wsgi:application --bind 0.0.0.0:8000 --reload
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: connecthub
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
