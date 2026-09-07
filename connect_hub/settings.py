@@ -27,6 +27,13 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,testserver').spl
 # testserver Django test Client ke liye hamesha allow karo
 if 'testserver' not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append('testserver')
+# Real-world: Render ka host auto-allow (connect-hub-omce.onrender.com)
+for h in ['connect-hub-omce.onrender.com', 'connect-hub.onrender.com']:
+    if h not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(h)
+# Wildcard for any onrender.com (Render free tier)
+if '.onrender.com' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.onrender.com')
 
 # ============ APPS ============
 # Django ke default apps + apne custom apps
@@ -153,7 +160,7 @@ REST_FRAMEWORK = {
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Dev me sab allow, prod me specific domain
 CORS_ALLOW_CREDENTIALS = True
 # Vite proxy same-origin banata hai (/api -> Django), phir bhi direct call ke liye trusted origins rakho
-CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000').split(',')
+CSRF_TRUSTED_ORIGINS = os.getenv('CSRF_TRUSTED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000,https://connect-hub-omce.onrender.com,https://*.onrender.com').split(',')
 # Production me: CORS_ALLOWED_ORIGINS = ['https://yourdomain.com']
 
 # ============ FILE UPLOAD LIMITS ============
