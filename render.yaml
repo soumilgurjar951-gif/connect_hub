@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: connect-hub
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn connect_hub.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DEBUG
+        value: 'False'
+      - key: SECRET_KEY
+        generator: secret
+      - key: DATABASE_URL
+        generator: secret
+    autoDeploy: true
+    pullRequestPreviews: false
