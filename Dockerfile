@@ -20,5 +20,5 @@ COPY . .
 # Static collect (WhiteNoise ke liye, build time pe)
 RUN python manage.py collectstatic --noinput || true
 
-# Gunicorn (prod server) — Railway Render auto PORT env deta hai
-CMD gunicorn connect_hub.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 60 --log-file -
+# Migrate + Gunicorn — Render pe DB auto-migrate (no such table fix)
+CMD python manage.py migrate --noinput && gunicorn connect_hub.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 60 --log-file -
