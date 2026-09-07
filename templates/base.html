@@ -107,17 +107,16 @@
   </div>
 </aside>
 
-<!-- ===== Mobile Topbar ===== -->
+<!-- ===== Mobile Topbar — notification panel only ===== -->
 <header class="md:hidden sticky top-0 z-10 bg-white dark:bg-neutral-900 border-b border-line dark:border-neutral-700 px-4 py-2.5 flex items-center justify-between">
   <a href="/" class="flex items-center gap-2">
     <img src="{% static 'images/logo.svg' %}" alt="ConnectHub" class="h-7 w-auto block dark:hidden">
     <img src="{% static 'images/logo-dark.svg' %}" alt="ConnectHub" class="h-7 w-auto hidden dark:block">
   </a>
-  <div class="flex gap-4 items-center text-[19px]">
-    <a href="{% url 'posts:create' %}" title="Create">⊕</a>
-    <a href="/chat/" title="Messages">✈️</a>
-    <a href="{% url 'accounts:profile' user.profile.username|default:user.username %}" title="Profile" class="w-7 h-7 rounded-full bg-brand text-white flex items-center justify-center text-xs font-bold">{{ user.username|slice:":1"|upper }}</a>
-  </div>
+  <a href="/notifications/" class="relative w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-lg" title="Notifications">
+    🔔
+    <span id="notif-badge-top" class="hidden absolute -top-1 -right-1 bg-[#ff3040] text-white text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">0</span>
+  </a>
 </header>
 {% else %}
 <!-- ===== Guest Topbar ===== -->
@@ -146,12 +145,14 @@
 </div>
 
 {% if user.is_authenticated %}
-<!-- ===== Mobile Bottom Nav ===== -->
-<nav class="md:hidden fixed bottom-0 left-0 right-0 z-10 bg-white dark:bg-neutral-900 border-t border-line dark:border-neutral-700 flex justify-around py-2.5 text-[22px]">
-  <a href="/" title="Home">🏠</a>
-  <a href="{% url 'posts:create' %}" title="Create">⊕</a>
-  <a href="/chat/" title="Messages">✈️</a>
-  <a href="{% url 'accounts:profile' user.profile.username|default:user.username %}" title="Profile">👤</a>
+<!-- ===== Mobile Bottom Nav — reels, notifications bhi -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white dark:bg-neutral-900 border-t border-line dark:border-neutral-700 flex justify-around py-2 text-[20px] pb-safe">
+  <a href="/" title="Home" class="flex flex-col items-center gap-0.5"><span>🏠</span><span class="text-[9px]">Home</span></a>
+  <a href="/reels/" title="Reels" class="flex flex-col items-center gap-0.5"><span>▶</span><span class="text-[9px]">Reels</span></a>
+  <a href="/explore/" title="Search" class="flex flex-col items-center gap-0.5"><span>⌕</span><span class="text-[9px]">Search</span></a>
+  <a href="/notifications/" title="Notifications" class="flex flex-col items-center gap-0.5 relative"><span>🔔</span><span class="text-[9px]">Alerts</span><span id="notif-badge-mobile" class="hidden absolute -top-1 -right-1 bg-[#ff3040] text-white text-[10px] min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center">0</span></a>
+  <a href="/chat/" title="Messages" class="flex flex-col items-center gap-0.5"><span>✈️</span><span class="text-[9px]">Chat</span></a>
+  <a href="{% url 'accounts:profile' user.profile.username|default:user.username %}" title="Profile" class="flex flex-col items-center gap-0.5"><span>👤</span><span class="text-[9px]">You</span></a>
 </nav>
 {% endif %}
 
@@ -161,10 +162,12 @@
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register("{% static 'sw.js' %}").catch(()=>{}));
 }
-// Notifications badge — auto polling
+// Notifications badge — desktop + mobile top + bottom
 {% if user.is_authenticated %}
 (function(){
   const badge = document.getElementById('notif-badge');
+  const badgeM = document.getElementById('notif-badge-mobile');
+  const badgeT = document.getElementById('notif-badge-top');
   async function checkNotif(){
     try{
       const r = await fetch('/api/notifications/', {headers:{'X-Requested-With':'XMLHttpRequest'}});
@@ -172,14 +175,15 @@ if ('serviceWorker' in navigator) {
       const data = await r.json();
       const list = data.results || data;
       const unread = Array.isArray(list) ? list.filter(n=>!n.is_read).length : 0;
-      if(badge){
-        if(unread>0){ badge.textContent = unread; badge.classList.remove('hidden'); }
-        else badge.classList.add('hidden');
-      }
+      [badge, badgeM, badgeT].forEach(b=>{
+        if(!b) return;
+        if(unread>0){ b.textContent = unread > 9 ? '9+' : unread; b.classList.remove('hidden'); }
+        else b.classList.add('hidden');
+      });
     }catch{}
   }
   checkNotif();
-  setInterval(checkNotif, 10000);
+  setInterval(checkNotif, 8000);
 })();
 {% endif %}
 </script>

@@ -15,10 +15,10 @@
         <div class="font-semibold text-sm leading-none flex items-center gap-1.5">@{{ other_username }} <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span></div>
         <div class="text-[11px] text-muted">Active now • {{ other.email|default:"ConnectHub user" }}</div>
       </div>
-      <div class="hidden sm:flex gap-1">
-        <button id="call-btn" class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center" title="Voice call">📞</button>
-        <button id="vc-btn" class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center" title="Video call">🎥</button>
-        <button class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center">⋯</button>
+      <div class="flex gap-1">
+        <button id="call-btn" class="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 sm:hover:bg-neutral-100 flex items-center justify-center" title="Voice call">📞</button>
+        <button id="vc-btn" class="w-8 h-8 rounded-full bg-neutral-100 dark:bg-neutral-800 sm:hover:bg-neutral-100 flex items-center justify-center" title="Video call">🎥</button>
+        <button class="hidden sm:flex w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 items-center justify-center">⋯</button>
       </div>
       <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] text-muted border border-line dark:border-neutral-700 rounded-full px-2 py-1">
         <span id="poll-dot" class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span><span id="poll-status">connected</span>
@@ -89,11 +89,15 @@
     <div id="typing" class="hidden self-start bg-white dark:bg-neutral-800 border border-line dark:border-neutral-700 px-3 py-2 rounded-[18px] text-muted text-xs">● ● ● typing…</div>
   </div>
 
+  <!-- Emoji picker (mobile-friendly) -->
+  <div id="emoji-picker" class="hidden card p-2 mt-2 flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
+    <button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">😊</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">😂</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">❤️</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">🔥</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">👍</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">🎉</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">😍</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">🥺</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">😎</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">🙏</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">✨</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">💯</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">😅</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">🤔</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">😭</button><button type="button" class="emoji w-8 h-8 hover:bg-neutral-100 rounded">🤣</button>
+  </div>
   <!-- Input -->
   <div class="card !rounded-t-none p-2.5 !border-t-0">
     <form method="post" id="msg-form" class="flex items-center gap-2">
       {% csrf_token %}
-      <button type="button" class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center shrink-0" title="Emoji">😊</button>
+      <button type="button" id="emoji-btn" class="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-center shrink-0" title="Emoji">😊</button>
       <input type="text" name="content" id="msg-input" placeholder="Message @{{ other_username }}..." maxlength="1000" required autocomplete="off" class="flex-1 bg-neutral-100 dark:bg-neutral-800 border-0 rounded-full px-4 py-2.5 text-sm focus:ring-1 focus:ring-brand placeholder:text-muted">
       <button type="submit" class="w-9 h-9 rounded-full bg-brand hover:bg-brand-dark text-white flex items-center justify-center shrink-0 font-bold">↑</button>
     </form>
@@ -118,6 +122,20 @@ const isVideoDefault = false;
 function scrollBottom() { messagesDiv.scrollTop = messagesDiv.scrollHeight; }
 scrollBottom();
 input.addEventListener('input', () => { document.getElementById('char-count').textContent = input.value.length; });
+// Emoji picker — mobile tap friendly
+const picker = document.getElementById('emoji-picker');
+const emojiBtn = document.getElementById('emoji-btn');
+if (emojiBtn && picker) {
+  emojiBtn.addEventListener('click', () => picker.classList.toggle('hidden'));
+  picker.querySelectorAll('.emoji').forEach(b => {
+    b.addEventListener('click', () => {
+      const s = input.selectionStart, e = input.selectionEnd;
+      input.value = input.value.slice(0,s) + b.textContent + input.value.slice(e);
+      input.focus(); input.selectionStart = input.selectionEnd = s + b.textContent.length;
+      document.getElementById('char-count').textContent = input.value.length;
+    });
+  });
+}
 function appendMsg(m) {
   // Duplicate rokho — ek hi baar dikhe, jab bheju tab hi
   if (document.querySelector(`[data-id="${m.id}"]`)) return;

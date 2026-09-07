@@ -9,11 +9,22 @@
     <!-- STORIES — jo share kare vo dikhega -->
     <div class="card p-0 mb-4 overflow-hidden">
       <div class="flex gap-3 px-3 py-3 overflow-x-auto no-scrollbar">
+        {% if stories and stories.0.user_id == user.id and stories.0.has_story %}
+        <a href="{% url 'accounts:story_detail' stories.0.story_id %}" class="shrink-0 flex flex-col items-center gap-1.5 w-[72px] text-center">
+          <div class="story-ring">
+            {% if stories.0.avatar %}<img src="{{ stories.0.avatar.url }}" class="w-[56px] h-[56px] rounded-full object-cover border-2 border-white dark:border-neutral-900">
+            {% else %}<div class="w-[56px] h-[56px] rounded-full bg-neutral-100 dark:bg-neutral-700 border-2 border-white dark:border-neutral-900 flex items-center justify-center text-sm font-bold">{{ stories.0.username|slice:":1"|upper }}</div>{% endif %}
+          </div>
+          <span class="text-[11px] font-semibold">Your story</span>
+          <span class="text-[9px] -mt-1 text-brand">👁 View</span>
+        </a>
+        {% else %}
         <a href="{% url 'accounts:story_create' %}" class="shrink-0 flex flex-col items-center gap-1.5 w-[72px] text-center">
           <div class="w-[56px] h-[56px] rounded-full bg-neutral-100 dark:bg-neutral-800 border-2 border-dashed border-line dark:border-neutral-600 flex items-center justify-center text-lg">＋</div>
           <span class="text-[11px] font-semibold">Your story</span>
           <span class="text-[9px] -mt-1 text-brand">Add</span>
         </a>
+        {% endif %}
         {% for s in stories %}
           {% if s.user_id != user.id %}
             {% if s.has_story and s.story_id %}
